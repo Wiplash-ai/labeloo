@@ -161,6 +161,71 @@ a {
   box-shadow: 0 30px 80px rgba(28, 40, 37, 0.18);
   position: relative;
 }
+.availability-band {
+  min-height: 96px;
+  padding: 18px max(24px, calc((100vw - var(--max)) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #f4f3ed;
+}
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.source-link img {
+  width: 31px;
+  height: 31px;
+}
+.source-link span {
+  display: grid;
+  gap: 2px;
+}
+.source-link small,
+.browser-support > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.source-link strong {
+  font-size: 13px;
+}
+.source-link:hover strong {
+  color: var(--teal);
+}
+.browser-support {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.browser-support ul {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+}
+.browser-support li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #465350;
+  font-size: 12px;
+  font-weight: 800;
+}
+.browser-support img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
 .demo-bar {
   height: 56px;
   padding: 0 12px;
@@ -276,14 +341,20 @@ a {
   box-shadow: 0 9px 28px rgba(31, 42, 39, 0.18);
 }
 .sheet-cell {
-  padding: 4px 5px;
+  padding: 4px 6px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
   border: 1px dashed rgba(8, 127, 120, 0.18);
-  font-size: 5px;
-  line-height: 1.28;
+  font-size: 6.5px;
+  font-weight: 700;
+  line-height: 1.22;
+}
+.sheet-cell span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sheet-cell.active {
   outline: 2px solid var(--teal);
@@ -457,6 +528,30 @@ footer a:last-child {
     width: 100%;
     max-width: 100%;
     overflow: hidden;
+  }
+  .availability-band {
+    padding: 22px 18px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .browser-support {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .browser-support ul {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .browser-support li {
+    gap: 5px;
+    font-size: 10px;
+  }
+  .browser-support img {
+    width: 19px;
+    height: 19px;
   }
   .sheet-wrap {
     padding: 14px 8px;

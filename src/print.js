@@ -1,15 +1,16 @@
-import { TEMPLATE, labelLines, labelPosition, sheetCount } from "./model.js";
+import { TEMPLATE, activeSheet, labelLines, labelPosition, sheetCount } from "./model.js";
 import { loadWorkspace } from "./storage.js";
 
 const state = await loadWorkspace();
+const sheet = activeSheet(state);
 const sheets = document.getElementById("printSheets");
 document.getElementById("printProjectName").textContent = state.projectName || "Labeloo";
 
-for (let sheetIndex = 0; sheetIndex < sheetCount(state); sheetIndex += 1) {
+for (let sheetIndex = 0; sheetIndex < sheetCount(sheet); sheetIndex += 1) {
   const page = document.createElement("section");
   page.className = "print-sheet";
-  state.labels.forEach((label, index) => {
-    const position = labelPosition(index, state.startSlot);
+  sheet.labels.forEach((label, index) => {
+    const position = labelPosition(index, sheet.startSlot);
     if (position.sheet !== sheetIndex) return;
     const row = Math.floor(position.slot / TEMPLATE.columns);
     const column = position.slot % TEMPLATE.columns;

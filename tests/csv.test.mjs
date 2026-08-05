@@ -16,6 +16,12 @@ test("CSV export quotes commas and round trips", () => {
   assert.equal(parseCsv(csv)[0].name, "Wiplash, AI");
 });
 
-test("CSV import requires an address column", () => {
-  assert.throws(() => parseCsv("Name,City\nJordan,Austin"), /address or street column/i);
+test("CSV import supports name and email label types", () => {
+  const [label] = parseCsv("Name,Email\nJordan,jordan@example.com");
+  assert.equal(label.type, "email");
+  assert.equal(label.email, "jordan@example.com");
+});
+
+test("CSV import requires at least one supported label column", () => {
+  assert.throws(() => parseCsv("Favorite Color,Pet\nBlue,Fido"), /name, address, email, or label text column/i);
 });

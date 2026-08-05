@@ -8,25 +8,32 @@
     <link rel="stylesheet" href="app.css">
   </head>
   <body>
+    <nav class="skip-links" aria-label="Workspace shortcuts">
+      <a href="#labelLibrary">Jump to labels</a>
+      <a href="#sheetWorkbench">Jump to preview</a>
+      <a href="#labelInspector">Jump to editor</a>
+    </nav>
     <div class="app-shell">
       <header class="app-header">
         <a class="brand" href="app.html" aria-label="Labeloo home">
           <img src="assets/labeloo-mark.svg" alt="" width="42" height="42">
           <span>
             <strong>Labeloo</strong>
-            <small>Address label workbench</small>
+            <small>Label sheet workbench</small>
           </span>
         </a>
 
         <div class="project-control">
-          <label for="projectName">Project</label>
-          <input id="projectName" type="text" maxlength="80" value="My label sheet">
+          <label class="project-name-field" for="projectName">
+            <span>Project</span>
+            <input id="projectName" type="text" maxlength="80" value="My label sheet">
+          </label>
           <span id="saveState" class="save-state">Saved locally</span>
         </div>
 
         <div class="header-actions">
           <button id="accountButton" class="button button--quiet" type="button" title="Account and sync">
-            <i data-lucide="cloud"></i><span id="accountButtonLabel">Local only</span>
+            <i data-lucide="log-in"></i><span id="accountButtonLabel">Sign in</span>
           </button>
           <button id="importButton" class="button button--quiet" type="button" title="Import addresses">
             <i data-lucide="file-up"></i><span>Import</span>
@@ -41,7 +48,7 @@
       </header>
 
       <main class="workspace">
-        <aside class="label-library" aria-label="Labels">
+        <aside id="labelLibrary" class="label-library" aria-label="Labels" tabindex="-1">
           <div class="panel-heading">
             <div>
               <span class="eyebrow">Sheet contents</span>
@@ -69,13 +76,19 @@
           </button>
         </aside>
 
-        <section class="sheet-workbench" aria-label="Print preview">
+        <section id="sheetWorkbench" class="sheet-workbench" aria-label="Print preview" tabindex="-1">
           <div class="sheet-toolbar">
-            <div class="page-stepper" aria-label="Sheet navigation">
+            <div class="sheet-set-control">
+              <label for="sheetSelect"><span>Sheet</span><select id="sheetSelect" aria-label="Choose a label sheet"></select></label>
+              <button id="addSheetButton" class="icon-button icon-button--accent" type="button" title="Create another sheet" aria-label="Create another sheet"><i data-lucide="plus"></i></button>
+              <button id="sheetMenuButton" class="icon-button" type="button" title="Rename or remove this sheet" aria-label="Rename or remove this sheet"><i data-lucide="settings-2"></i></button>
+            </div>
+
+            <div class="page-stepper" aria-label="Printed page navigation">
               <button id="previousSheetButton" class="icon-button" type="button" title="Previous sheet" aria-label="Previous sheet">
                 <i data-lucide="chevron-left"></i>
               </button>
-              <span id="sheetPosition">Sheet 1 of 1</span>
+              <span id="sheetPosition">Page 1 of 1</span>
               <button id="nextSheetButton" class="icon-button" type="button" title="Next sheet" aria-label="Next sheet">
                 <i data-lucide="chevron-right"></i>
               </button>
@@ -83,9 +96,9 @@
 
             <div class="toolbar-fields">
               <label>
-                <span>Paper</span>
+                <span>Label stock</span>
                 <select id="templateSelect">
-                  <option value="address-30">30-up address · 5160 compatible</option>
+                  <option value="avery-5160-30">Avery 5160 · 30 labels · Letter</option>
                 </select>
               </label>
               <label class="start-field">
@@ -105,7 +118,7 @@
           <p class="sheet-note"><i data-lucide="info"></i> Use a test sheet before printing on label stock. Browser print scaling must stay at 100%.</p>
         </section>
 
-        <aside class="inspector" aria-label="Label editor">
+        <aside id="labelInspector" class="inspector" aria-label="Label editor" tabindex="-1">
           <div id="emptyInspector" class="empty-inspector">
             <span class="empty-mark"><i data-lucide="mouse-pointer-2"></i></span>
             <h2>Select a label</h2>
@@ -126,32 +139,62 @@
 
             <form id="labelForm" class="label-form">
               <label class="field field--wide">
+                <span>Label type</span>
+                <select id="labelTypeInput">
+                  <option value="address">Address</option>
+                  <option value="name">Name tag</option>
+                  <option value="email">Email</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <div id="validationSummary" class="validation-summary field--wide" role="status"></div>
+
+              <label class="field field--wide" data-label-types="address name email">
                 <span>Name or organization</span>
-                <input id="nameInput" type="text" maxlength="120" autocomplete="off">
+                <input id="nameInput" type="text" maxlength="120" autocomplete="off" aria-describedby="nameError">
+                <small id="nameError" class="field-error"></small>
               </label>
-              <label class="field field--wide">
+              <label class="field field--wide" data-label-types="name">
+                <span>Role or organization</span>
+                <input id="subtitleInput" type="text" maxlength="120" autocomplete="organization-title">
+              </label>
+              <label class="field field--wide" data-label-types="email">
+                <span>Email address</span>
+                <input id="emailInput" type="email" maxlength="254" autocomplete="email" aria-describedby="emailError">
+                <small id="emailError" class="field-error"></small>
+              </label>
+              <label class="field field--wide" data-label-types="custom">
+                <span>Label text</span>
+                <textarea id="customTextInput" rows="6" maxlength="600" placeholder="Up to five lines" aria-describedby="customTextError"></textarea>
+                <small id="customTextError" class="field-error"></small>
+              </label>
+              <label class="field field--wide" data-label-types="address">
                 <span>Address line 1</span>
-                <input id="address1Input" type="text" maxlength="120" autocomplete="off">
+                <input id="address1Input" type="text" maxlength="120" autocomplete="address-line1" aria-describedby="address1Error">
+                <small id="address1Error" class="field-error"></small>
               </label>
-              <label class="field field--wide">
+              <label class="field field--wide" data-label-types="address">
                 <span>Address line 2</span>
-                <input id="address2Input" type="text" maxlength="120" autocomplete="off">
+                <input id="address2Input" type="text" maxlength="120" autocomplete="address-line2">
               </label>
-              <label class="field field--city">
+              <label class="field field--city" data-label-types="address">
                 <span>City</span>
-                <input id="cityInput" type="text" maxlength="80" autocomplete="off">
+                <input id="cityInput" type="text" maxlength="80" autocomplete="address-level2" aria-describedby="cityError">
+                <small id="cityError" class="field-error"></small>
               </label>
-              <label class="field field--state">
+              <label class="field field--state" data-label-types="address">
                 <span>State</span>
-                <input id="stateInput" type="text" maxlength="40" autocomplete="off">
+                <input id="stateInput" type="text" maxlength="40" autocomplete="address-level1" aria-describedby="stateError">
+                <small id="stateError" class="field-error"></small>
               </label>
-              <label class="field field--postal">
+              <label class="field field--postal" data-label-types="address">
                 <span>ZIP / postal</span>
-                <input id="postalInput" type="text" maxlength="20" autocomplete="off">
+                <input id="postalInput" type="text" maxlength="20" autocomplete="postal-code" aria-describedby="postalError">
+                <small id="postalError" class="field-error"></small>
               </label>
-              <label class="field field--wide">
+              <label class="field field--wide" data-label-types="address">
                 <span>Country</span>
-                <input id="countryInput" type="text" maxlength="80" autocomplete="off">
+                <input id="countryInput" type="text" maxlength="80" autocomplete="country-name">
               </label>
 
               <div class="form-divider"><span>Type</span></div>
@@ -175,6 +218,7 @@
           </div>
         </aside>
       </main>
+      <footer class="brand-footer"><span>Built in <a href="https://labs.wiplash.ai/" target="_blank" rel="noreferrer">Wiplash Labs</a></span><span>Produced by <a href="https://wiplash.ai/" target="_blank" rel="noreferrer">Wiplash.ai</a></span><a href="https://labs.wiplash.ai/labeloo/privacy/" target="_blank" rel="noreferrer">Privacy</a></footer>
     </div>
 
     <dialog id="importDialog" class="import-dialog">
@@ -182,7 +226,7 @@
         <header>
           <div>
             <span class="eyebrow">Bring your list</span>
-            <h2>Import addresses</h2>
+            <h2>Import labels</h2>
           </div>
           <button id="closeImportButton" class="icon-button" value="cancel" title="Close" aria-label="Close"><i data-lucide="x"></i></button>
         </header>
@@ -203,7 +247,7 @@
           <label class="file-drop" for="csvInput">
             <i data-lucide="file-spreadsheet"></i>
             <strong>Choose a CSV file</strong>
-            <span>Name, address, city, state, and postal columns are detected automatically.</span>
+            <span>Type, name, email, custom text, and address columns are detected automatically.</span>
             <input id="csvInput" type="file" accept=".csv,text/csv">
           </label>
           <p id="csvFileName" class="file-name"></p>
@@ -234,7 +278,7 @@
           <label id="accountNameField" class="field field--wide hidden"><span>Name</span><input id="accountName" type="text" maxlength="100" autocomplete="name"></label>
           <label class="field field--wide"><span>Email</span><input id="accountEmail" type="email" maxlength="254" autocomplete="email"></label>
           <label class="field field--wide"><span>Password</span><input id="accountPassword" type="password" minlength="10" maxlength="128" autocomplete="current-password"></label>
-          <details class="sync-service"><summary>Sync service</summary><select id="accountApiBase"><option value="https://labs.wiplash.ai/labeloo/api/v1">Wiplash Cloud</option><option value="http://127.0.0.1:8790/api/v1">Local development</option></select></details>
+          <p class="sync-benefit"><i data-lucide="refresh-cw"></i><span>Sign in to keep the same sheets on every browser. Local printing and editing still work without an account.</span></p>
           <button id="accountSubmit" class="button button--primary" type="button">Sign in</button>
         </section>
         <section id="signedInAccount" class="account-content hidden">
@@ -245,6 +289,15 @@
         </section>
         <p id="accountMessage" class="dialog-message" role="status"></p>
       </div>
+    </dialog>
+
+    <dialog id="sheetDialog" class="sheet-dialog">
+      <form method="dialog" class="dialog-shell compact-dialog">
+        <header><div><span class="eyebrow">Label collection</span><h2 id="sheetDialogTitle">Create a sheet</h2></div><button class="icon-button" value="cancel" title="Close" aria-label="Close"><i data-lucide="x"></i></button></header>
+        <label class="field field--wide"><span>Sheet name</span><input id="sheetNameInput" type="text" maxlength="60" value="Address sheet"></label>
+        <label class="field field--wide"><span>Default label type</span><select id="sheetTypeInput"><option value="address">Address</option><option value="name">Name tag</option><option value="email">Email</option><option value="custom">Custom</option></select></label>
+        <footer><button id="deleteSheetButton" class="button button--danger hidden" type="button">Remove sheet</button><span></span><button class="button button--quiet" value="cancel">Cancel</button><button id="saveSheetButton" class="button button--primary" type="button">Save sheet</button></footer>
+      </form>
     </dialog>
 
     <div id="printPortal" class="print-portal" aria-hidden="true"></div>

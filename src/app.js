@@ -12,53 +12,67 @@ import {
   FileSpreadsheet,
   FileUp,
   Info,
+  LogIn,
   MousePointer2,
   Plus,
   Printer,
   RefreshCw,
   Search,
+  Settings2,
   Trash2,
   X,
   createIcons
 } from "lucide";
 import { labelsToCsv, parseCsv } from "./csv.js";
 import {
+  LABEL_TYPES,
   TEMPLATE,
+  activeSheet,
   blankLabel,
+  blankSheet,
   labelLines,
   labelPosition,
-  parseAddressBlock,
   parseAddressBlocks,
+  parseQuickLabel,
   sanitizeWorkspace,
-  sheetCount
+  sheetCount,
+  validateLabel
 } from "./model.js";
 import { loadWorkspace, saveWorkspace, takePendingSelection } from "./storage.js";
 import { authenticate, loadAccount, logout, pullWorkspace, pushWorkspace } from "./sync.js";
 
-createIcons({
-  icons: {
-    AlignCenter,
-    AlignLeft,
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
-    ChevronUp,
-    ClipboardPaste,
-    Cloud,
-    Copy,
-    Download,
-    FileSpreadsheet,
-    FileUp,
-    Info,
-    MousePointer2,
-    Plus,
-    Printer,
-    RefreshCw,
-    Search,
-    Trash2,
-    X
-  }
-});
+const ICONS = {
+  AlignCenter,
+  AlignLeft,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ClipboardPaste,
+  Cloud,
+  Copy,
+  Download,
+  FileSpreadsheet,
+  FileUp,
+  Info,
+  LogIn,
+  MousePointer2,
+  Plus,
+  Printer,
+  RefreshCw,
+  Search,
+  Settings2,
+  Trash2,
+  X
+};
+
+function renderIcons() {
+  document.querySelectorAll("svg[data-lucide]").forEach((icon) => icon.removeAttribute("data-lucide"));
+  createIcons({ icons: ICONS });
+  document.querySelectorAll("svg[data-lucide]").forEach((icon) => icon.removeAttribute("data-lucide"));
+}
+
+renderIcons();
 
 const $ = (selector) => document.querySelector(selector);
 const elements = Object.fromEntries([
@@ -78,6 +92,9 @@ const elements = Object.fromEntries([
   "previousSheetButton",
   "nextSheetButton",
   "sheetPosition",
+  "sheetSelect",
+  "addSheetButton",
+  "sheetMenuButton",
   "templateSelect",
   "startSlotInput",
   "zoomInput",
@@ -89,7 +106,11 @@ const elements = Object.fromEntries([
   "duplicateLabelButton",
   "deleteLabelButton",
   "labelForm",
+  "labelTypeInput",
   "nameInput",
+  "subtitleInput",
+  "emailInput",
+  "customTextInput",
   "address1Input",
   "address2Input",
   "cityInput",
@@ -99,6 +120,7 @@ const elements = Object.fromEntries([
   "alignmentControl",
   "fontSizeInput",
   "lineHeightInput",
+  "validationSummary",
   "importDialog",
   "closeImportButton",
   "pastePanel",
@@ -110,10 +132,11 @@ const elements = Object.fromEntries([
   "confirmImportButton",
   "toast",
   "accountDialog", "closeAccountButton", "signedOutAccount", "signedInAccount",
-  "accountNameField", "accountName", "accountEmail", "accountPassword", "accountApiBase",
+  "accountNameField", "accountName", "accountEmail", "accountPassword",
   "accountSubmit", "accountUserName", "accountUserEmail", "cloudProjectStatus",
   "conflictActions", "useCloudButton", "keepLocalButton", "syncNowButton", "logoutButton",
-  "accountMessage", "printPortal"
+  "accountMessage", "printPortal", "sheetDialog", "sheetDialogTitle", "sheetNameInput",
+  "sheetTypeInput", "deleteSheetButton", "saveSheetButton"
 ].map((id) => [id, document.getElementById(id)]));
 
 let state = await loadWorkspace();
@@ -124,27 +147,31 @@ let toastTimer = null;
 let cloudTimer = null;
 let account = await loadAccount();
 let accountMode = "login";
+let sheetDialogMode = "create";
 
-if (!state.selectedId && state.labels[0]) state.selectedId = state.labels[0].id;
+const currentSheet = () => activeSheet(state);
+const currentLabels = () => currentSheet().labels;
+
+if (!state.selectedId && currentLabels()[0]) state.selectedId = currentLabels()[0].id;
 
 const pendingSelection = await takePendingSelection();
 if (pendingSelection) {
-  const captured = parseAddressBlock(pendingSelection);
+  const captured = parseQuickLabel(pendingSelection.type, pendingSelection.value);
   if (captured) {
-    state.labels.push(captured);
+    currentLabels().push(captured);
     state.selectedId = captured.id;
-    const position = labelPosition(state.labels.length - 1, state.startSlot);
-    state.activeSheet = position.sheet;
-    queueMicrotask(() => showToast("Selected address added"));
+    const position = labelPosition(currentLabels().length - 1, currentSheet().startSlot);
+    currentSheet().activePage = position.sheet;
+    queueMicrotask(() => showToast(`${LABEL_TYPES[captured.type].label} added`));
   }
 }
 
 function selectedLabel() {
-  return state.labels.find((label) => label.id === state.selectedId) || null;
+  return currentLabels().find((label) => label.id === state.selectedId) || null;
 }
 
 function selectedIndex() {
-  return state.labels.findIndex((label) => label.id === state.selectedId);
+  return currentLabels().findIndex((label) => label.id === state.selectedId);
 }
 
 function showToast(message) {
@@ -171,7 +198,7 @@ function scheduleSave() {
 
 function renderAccount() {
   const signedIn = Boolean(account.token && account.user);
-  elements.accountButtonLabel.textContent = signedIn ? "Synced" : "Local only";
+  elements.accountButtonLabel.textContent = signedIn ? "Account" : "Sign in";
   elements.signedOutAccount.classList.toggle("hidden", signedIn);
   elements.signedInAccount.classList.toggle("hidden", !signedIn);
   elements.conflictActions.classList.toggle("hidden", !account.conflict);
@@ -204,14 +231,15 @@ async function syncToCloud(force = false) {
 
 function printLabels() {
   elements.printPortal.replaceChildren();
-  const count = sheetCount(state);
+  const sheetSet = currentSheet();
+  const count = sheetCount(sheetSet);
   for (let sheet = 0; sheet < count; sheet += 1) {
     const page = document.createElement("section");
     page.className = "print-sheet";
     for (let slot = 0; slot < TEMPLATE.labelsPerSheet; slot += 1) {
       const globalSlot = sheet * TEMPLATE.labelsPerSheet + slot;
-      const index = globalSlot - (state.startSlot - 1);
-      const label = index >= 0 ? state.labels[index] : null;
+      const index = globalSlot - (sheetSet.startSlot - 1);
+      const label = index >= 0 ? sheetSet.labels[index] : null;
       const cell = document.createElement("div");
       cell.className = `print-label${label ? ` align-${label.align}` : ""}`;
       if (label) {
@@ -231,7 +259,7 @@ function selectLabel(id, moveToSheet = true) {
   state.selectedId = id;
   if (moveToSheet) {
     const index = selectedIndex();
-    if (index >= 0) state.activeSheet = labelPosition(index, state.startSlot).sheet;
+    if (index >= 0) currentSheet().activePage = labelPosition(index, currentSheet().startSlot).sheet;
   }
   render();
   scheduleSave();
@@ -246,6 +274,12 @@ function createListItem(label, index) {
   button.type = "button";
   button.className = "label-list-main";
   button.addEventListener("click", () => selectLabel(label.id));
+  button.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    selectLabel(label.id);
+    queueMicrotask(() => elements.nameInput.focus());
+  });
 
   const indexBadge = document.createElement("span");
   indexBadge.className = "label-index";
@@ -256,7 +290,7 @@ function createListItem(label, index) {
   const title = document.createElement("strong");
   title.textContent = label.name || "Untitled label";
   const address = document.createElement("small");
-  address.textContent = [label.address1, label.city, label.state].filter(Boolean).join(", ") || "No address yet";
+  address.textContent = labelLines(label).slice(label.name ? 1 : 0).join(" · ") || LABEL_TYPES[label.type].description;
   copy.append(title, address);
   button.append(indexBadge, copy);
 
@@ -273,7 +307,7 @@ function createListItem(label, index) {
   down.type = "button";
   down.className = "mini-icon";
   down.title = "Move label down";
-  down.disabled = index === state.labels.length - 1;
+  down.disabled = index === currentLabels().length - 1;
   down.innerHTML = '<i data-lucide="chevron-down"></i>';
   down.addEventListener("click", () => moveLabel(index, index + 1));
   movement.append(up, down);
@@ -285,7 +319,7 @@ function createListItem(label, index) {
 function renderList() {
   const query = elements.searchInput.value.trim().toLowerCase();
   elements.labelList.replaceChildren();
-  state.labels.forEach((label, index) => {
+  currentLabels().forEach((label, index) => {
     const searchable = labelLines(label).join(" ").toLowerCase();
     if (!query || searchable.includes(query)) elements.labelList.append(createListItem(label, index));
   });
@@ -293,16 +327,17 @@ function renderList() {
   if (!elements.labelList.children.length) {
     const empty = document.createElement("p");
     empty.className = "empty-list";
-    empty.textContent = state.labels.length ? "No labels match that search." : "Add a label or import an address list.";
+    empty.textContent = currentLabels().length ? "No labels match that search." : "Add a label or import a list.";
     elements.labelList.append(empty);
   }
-  createIcons({ icons: { ChevronDown, ChevronUp } });
+  renderIcons();
 }
 
 function slotForSheet(slot) {
-  const globalSlot = state.activeSheet * TEMPLATE.labelsPerSheet + slot;
-  const recordIndex = globalSlot - (state.startSlot - 1);
-  return recordIndex >= 0 ? { label: state.labels[recordIndex], recordIndex } : { label: null, recordIndex };
+  const sheet = currentSheet();
+  const globalSlot = sheet.activePage * TEMPLATE.labelsPerSheet + slot;
+  const recordIndex = globalSlot - (sheet.startSlot - 1);
+  return recordIndex >= 0 ? { label: sheet.labels[recordIndex], recordIndex } : { label: null, recordIndex };
 }
 
 function createSheetSlot(slot) {
@@ -341,26 +376,49 @@ function createSheetSlot(slot) {
   });
   cell.append(content);
   cell.addEventListener("click", () => selectLabel(label.id, false));
+  cell.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    selectLabel(label.id, false);
+    queueMicrotask(() => elements.nameInput.focus());
+  });
   return cell;
 }
 
 function renderSheet() {
-  const totalSheets = sheetCount(state);
-  state.activeSheet = Math.min(Math.max(0, state.activeSheet), totalSheets - 1);
+  const sheet = currentSheet();
+  const totalSheets = sheetCount(sheet);
+  sheet.activePage = Math.min(Math.max(0, sheet.activePage), totalSheets - 1);
   elements.sheetCanvas.replaceChildren(...Array.from({ length: TEMPLATE.labelsPerSheet }, (_, slot) => createSheetSlot(slot)));
   elements.sheetCanvas.style.width = `${TEMPLATE.pageWidthIn}in`;
   elements.sheetCanvas.style.height = `${TEMPLATE.pageHeightIn}in`;
   elements.sheetCanvas.style.transform = `scale(${state.zoom / 100})`;
   elements.sheetStage.style.setProperty("--sheet-scale", String(state.zoom / 100));
-  elements.sheetPosition.textContent = `Sheet ${state.activeSheet + 1} of ${totalSheets}`;
-  elements.previousSheetButton.disabled = state.activeSheet === 0;
-  elements.nextSheetButton.disabled = state.activeSheet >= totalSheets - 1;
+  elements.sheetPosition.textContent = `Page ${sheet.activePage + 1} of ${totalSheets}`;
+  elements.previousSheetButton.disabled = sheet.activePage === 0;
+  elements.nextSheetButton.disabled = sheet.activePage >= totalSheets - 1;
 }
 
 function fillEditor(label) {
-  const fields = ["name", "address1", "address2", "city", "state", "postal", "country"];
+  const fields = ["name", "subtitle", "email", "customText", "address1", "address2", "city", "state", "postal", "country"];
   fields.forEach((field) => {
     elements[`${field}Input`].value = label[field];
+  });
+  elements.labelTypeInput.value = label.type;
+  document.querySelectorAll("[data-label-types]").forEach((field) => {
+    field.classList.toggle("hidden", !field.dataset.labelTypes.split(" ").includes(label.type));
+  });
+  const validation = validateLabel(label);
+  elements.validationSummary.className = `validation-summary field--wide ${validation.valid ? "valid" : "needs-attention"}`;
+  elements.validationSummary.textContent = validation.valid
+    ? `${LABEL_TYPES[label.type].label} details look ready to print.`
+    : `Check ${Object.keys(validation.errors).length} field${Object.keys(validation.errors).length === 1 ? "" : "s"} before printing.`;
+  ["name", "email", "customText", "address1", "city", "state", "postal"].forEach((field) => {
+    const error = document.getElementById(`${field}Error`);
+    const input = elements[`${field}Input`];
+    if (!error || !input) return;
+    error.textContent = validation.errors[field] || "";
+    input.setAttribute("aria-invalid", validation.errors[field] ? "true" : "false");
   });
   elements.fontSizeInput.value = label.fontSize;
   elements.lineHeightInput.value = label.lineHeight;
@@ -368,8 +426,8 @@ function fillEditor(label) {
     button.classList.toggle("selected", button.dataset.align === label.align);
   });
   const index = selectedIndex();
-  const position = labelPosition(index, state.startSlot);
-  elements.selectedPosition.textContent = `Label ${index + 1} · Sheet ${position.sheet + 1}, position ${position.slot + 1}`;
+  const position = labelPosition(index, currentSheet().startSlot);
+  elements.selectedPosition.textContent = `Label ${index + 1} · Page ${position.sheet + 1}, position ${position.slot + 1}`;
 }
 
 function renderInspector() {
@@ -380,12 +438,20 @@ function renderInspector() {
 }
 
 function renderMeta() {
-  const totalSheets = sheetCount(state);
+  const sheet = currentSheet();
+  const totalSheets = sheetCount(sheet);
   elements.projectName.value = state.projectName;
-  elements.labelCount.textContent = `${state.labels.length} label${state.labels.length === 1 ? "" : "s"}`;
-  elements.sheetCount.textContent = `${totalSheets} sheet${totalSheets === 1 ? "" : "s"}`;
-  elements.startSlotInput.value = state.startSlot;
+  elements.labelCount.textContent = `${sheet.labels.length} label${sheet.labels.length === 1 ? "" : "s"}`;
+  elements.sheetCount.textContent = `${totalSheets} page${totalSheets === 1 ? "" : "s"}`;
+  elements.startSlotInput.value = sheet.startSlot;
   elements.zoomInput.value = state.zoom;
+  elements.sheetSelect.replaceChildren(...state.sheets.map((item) => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.name;
+    option.selected = item.id === state.activeSheetId;
+    return option;
+  }));
 }
 
 function render() {
@@ -395,19 +461,22 @@ function render() {
   renderInspector();
 }
 
-function addLabel(label = blankLabel()) {
-  state.labels.push(label);
-  state.selectedId = label.id;
-  state.activeSheet = labelPosition(state.labels.length - 1, state.startSlot).sheet;
+function addLabel(label = null) {
+  const sheet = currentSheet();
+  const nextLabel = label || blankLabel({ type: sheet.defaultType });
+  sheet.labels.push(nextLabel);
+  state.selectedId = nextLabel.id;
+  sheet.activePage = labelPosition(sheet.labels.length - 1, sheet.startSlot).sheet;
   render();
   scheduleSave();
 }
 
 function moveLabel(from, to) {
-  if (to < 0 || to >= state.labels.length || from === to) return;
-  const [label] = state.labels.splice(from, 1);
-  state.labels.splice(to, 0, label);
-  state.activeSheet = labelPosition(to, state.startSlot).sheet;
+  const sheet = currentSheet();
+  if (to < 0 || to >= sheet.labels.length || from === to) return;
+  const [label] = sheet.labels.splice(from, 1);
+  sheet.labels.splice(to, 0, label);
+  sheet.activePage = labelPosition(to, sheet.startSlot).sheet;
   render();
   scheduleSave();
 }
@@ -415,8 +484,9 @@ function moveLabel(from, to) {
 function deleteSelected() {
   const index = selectedIndex();
   if (index < 0) return;
-  const [removed] = state.labels.splice(index, 1);
-  state.selectedId = state.labels[Math.min(index, state.labels.length - 1)]?.id || null;
+  const labels = currentLabels();
+  const [removed] = labels.splice(index, 1);
+  state.selectedId = labels[Math.min(index, labels.length - 1)]?.id || null;
   render();
   scheduleSave();
   showToast(`${removed.name || "Label"} removed`);
@@ -427,9 +497,9 @@ function duplicateSelected() {
   const current = selectedLabel();
   if (!current) return;
   const duplicate = blankLabel({ ...current, id: undefined });
-  state.labels.splice(index + 1, 0, duplicate);
+  currentLabels().splice(index + 1, 0, duplicate);
   state.selectedId = duplicate.id;
-  state.activeSheet = labelPosition(index + 1, state.startSlot).sheet;
+  currentSheet().activePage = labelPosition(index + 1, currentSheet().startSlot).sheet;
   render();
   scheduleSave();
   showToast("Label duplicated");
@@ -438,13 +508,15 @@ function duplicateSelected() {
 function updateSelectedFromForm() {
   const label = selectedLabel();
   if (!label) return;
-  ["name", "address1", "address2", "city", "state", "postal", "country"].forEach((field) => {
+  label.type = elements.labelTypeInput.value;
+  ["name", "subtitle", "email", "customText", "address1", "address2", "city", "state", "postal", "country"].forEach((field) => {
     label[field] = elements[`${field}Input`].value.trimStart();
   });
   label.fontSize = Math.min(14, Math.max(7, Number(elements.fontSizeInput.value) || 10));
   label.lineHeight = Math.min(1.6, Math.max(1, Number(elements.lineHeightInput.value) || 1.15));
   renderList();
   renderSheet();
+  fillEditor(label);
   scheduleSave();
 }
 
@@ -467,9 +539,9 @@ async function importLabels() {
   try {
     const labels = activeImportTab === "csv" ? parseCsv(csvText) : parseAddressBlocks(elements.pasteInput.value);
     if (!labels.length) throw new Error("Add at least one complete address.");
-    state.labels.push(...labels);
+    currentLabels().push(...labels);
     state.selectedId = labels[0].id;
-    state.activeSheet = labelPosition(state.labels.length - labels.length, state.startSlot).sheet;
+    currentSheet().activePage = labelPosition(currentLabels().length - labels.length, currentSheet().startSlot).sheet;
     elements.importDialog.close();
     elements.pasteInput.value = "";
     elements.csvInput.value = "";
@@ -484,7 +556,7 @@ async function importLabels() {
 }
 
 function exportCsv() {
-  const blob = new Blob([labelsToCsv(state.labels)], { type: "text/csv;charset=utf-8" });
+  const blob = new Blob([labelsToCsv(currentLabels())], { type: "text/csv;charset=utf-8" });
   const link = document.createElement("a");
   const safeName = state.projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "labeloo";
   link.href = URL.createObjectURL(blob);
@@ -492,6 +564,65 @@ function exportCsv() {
   link.click();
   URL.revokeObjectURL(link.href);
   showToast("CSV exported");
+}
+
+function switchSheet(id) {
+  const next = state.sheets.find((sheet) => sheet.id === id);
+  if (!next) return;
+  state.activeSheetId = next.id;
+  state.selectedId = next.labels[0]?.id || null;
+  render();
+  scheduleSave();
+}
+
+function openSheetDialog(mode) {
+  sheetDialogMode = mode;
+  const sheet = currentSheet();
+  const creating = mode === "create";
+  elements.sheetDialogTitle.textContent = creating ? "Create another sheet" : "Sheet settings";
+  elements.sheetNameInput.value = creating ? `${LABEL_TYPES[sheet.defaultType].label} sheet ${state.sheets.length + 1}` : sheet.name;
+  elements.sheetTypeInput.value = creating ? sheet.defaultType : sheet.defaultType;
+  elements.deleteSheetButton.classList.toggle("hidden", creating || state.sheets.length === 1);
+  elements.sheetDialog.showModal();
+  queueMicrotask(() => elements.sheetNameInput.select());
+}
+
+function saveSheetSettings() {
+  const name = elements.sheetNameInput.value.trim();
+  if (!name) {
+    showToast("Give the sheet a name");
+    elements.sheetNameInput.focus();
+    return;
+  }
+  if (sheetDialogMode === "create") {
+    const sheet = blankSheet({ name, defaultType: elements.sheetTypeInput.value });
+    const first = blankLabel({ type: sheet.defaultType });
+    sheet.labels.push(first);
+    state.sheets.push(sheet);
+    state.activeSheetId = sheet.id;
+    state.selectedId = first.id;
+    showToast("New sheet created");
+  } else {
+    currentSheet().name = name;
+    currentSheet().defaultType = elements.sheetTypeInput.value;
+    showToast("Sheet settings saved");
+  }
+  elements.sheetDialog.close();
+  render();
+  scheduleSave();
+}
+
+function removeCurrentSheet() {
+  if (state.sheets.length === 1) return;
+  const index = state.sheets.findIndex((sheet) => sheet.id === state.activeSheetId);
+  const [removed] = state.sheets.splice(index, 1);
+  const next = state.sheets[Math.min(index, state.sheets.length - 1)];
+  state.activeSheetId = next.id;
+  state.selectedId = next.labels[0]?.id || null;
+  elements.sheetDialog.close();
+  render();
+  scheduleSave();
+  showToast(`${removed.name} removed`);
 }
 
 elements.addLabelButton.addEventListener("click", () => addLabel());
@@ -507,7 +638,6 @@ window.addEventListener("afterprint", () => {
 });
 elements.accountButton.addEventListener("click", () => {
   renderAccount();
-  elements.accountApiBase.value = account.apiBase;
   setAccountMessage("");
   elements.accountDialog.showModal();
 });
@@ -523,7 +653,6 @@ elements.accountSubmit.addEventListener("click", async () => {
   setAccountMessage("Connecting…");
   elements.accountSubmit.disabled = true;
   try {
-    account.apiBase = elements.accountApiBase.value;
     account = await authenticate(account, accountMode, {
       email: elements.accountEmail.value,
       password: elements.accountPassword.value,
@@ -558,13 +687,18 @@ elements.useCloudButton.addEventListener("click", async () => {
 });
 elements.keepLocalButton.addEventListener("click", () => syncToCloud(true));
 elements.searchInput.addEventListener("input", renderList);
+elements.sheetSelect.addEventListener("change", () => switchSheet(elements.sheetSelect.value));
+elements.addSheetButton.addEventListener("click", () => openSheetDialog("create"));
+elements.sheetMenuButton.addEventListener("click", () => openSheetDialog("edit"));
+elements.saveSheetButton.addEventListener("click", saveSheetSettings);
+elements.deleteSheetButton.addEventListener("click", removeCurrentSheet);
 elements.projectName.addEventListener("input", () => {
   state.projectName = elements.projectName.value;
   scheduleSave();
 });
 elements.startSlotInput.addEventListener("change", () => {
-  state.startSlot = Math.min(30, Math.max(1, Number(elements.startSlotInput.value) || 1));
-  state.activeSheet = 0;
+  currentSheet().startSlot = Math.min(30, Math.max(1, Number(elements.startSlotInput.value) || 1));
+  currentSheet().activePage = 0;
   render();
   scheduleSave();
 });
@@ -574,18 +708,25 @@ elements.zoomInput.addEventListener("input", () => {
   scheduleSave();
 });
 elements.previousSheetButton.addEventListener("click", () => {
-  state.activeSheet -= 1;
+  currentSheet().activePage -= 1;
   renderSheet();
   scheduleSave();
 });
 elements.nextSheetButton.addEventListener("click", () => {
-  state.activeSheet += 1;
+  currentSheet().activePage += 1;
   renderSheet();
   scheduleSave();
 });
 elements.deleteLabelButton.addEventListener("click", deleteSelected);
 elements.duplicateLabelButton.addEventListener("click", duplicateSelected);
 elements.labelForm.addEventListener("input", updateSelectedFromForm);
+elements.labelTypeInput.addEventListener("change", () => {
+  const label = selectedLabel();
+  if (!label) return;
+  label.type = elements.labelTypeInput.value;
+  render();
+  scheduleSave();
+});
 elements.alignmentControl.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-align]");
   const label = selectedLabel();
@@ -604,6 +745,18 @@ elements.csvInput.addEventListener("change", async () => {
 window.addEventListener("beforeunload", () => {
   clearTimeout(saveTimer);
   saveWorkspace(sanitizeWorkspace(state));
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!event.altKey || event.ctrlKey || event.metaKey) return;
+  const destinations = {
+    "1": () => elements.searchInput.focus(),
+    "2": () => document.getElementById("sheetWorkbench").focus(),
+    "3": () => selectedLabel() ? elements.nameInput.focus() : document.getElementById("labelInspector").focus()
+  };
+  if (!destinations[event.key]) return;
+  event.preventDefault();
+  destinations[event.key]();
 });
 
 render();

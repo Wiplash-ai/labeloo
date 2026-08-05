@@ -2,13 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   TEMPLATE,
+  activeSheet,
   blankLabel,
+  blankSheet,
   labelLines,
   labelPosition,
   parseAddressBlock,
   parseAddressBlocks,
   sanitizeWorkspace,
-  sheetCount
+  sheetCount,
+  validateLabel
 } from "../src/model.js";
 
 test("30-up geometry and start position map labels to physical slots", () => {
@@ -50,10 +53,27 @@ test("workspace data is bounded and sanitized", () => {
     labels: [blankLabel({ fontSize: 99, align: "sideways" })]
   });
   assert.equal(clean.projectName, "Test");
-  assert.equal(clean.startSlot, 30);
+  assert.equal(activeSheet(clean).startSlot, 30);
   assert.equal(clean.zoom, 65);
-  assert.equal(clean.labels[0].fontSize, 14);
-  assert.equal(clean.labels[0].align, "left");
+  assert.equal(activeSheet(clean).labels[0].fontSize, 14);
+  assert.equal(activeSheet(clean).labels[0].align, "left");
+  assert.equal(clean.version, 2);
+});
+
+test("workspaces preserve multiple named sheets", () => {
+  const address = blankSheet({ name: "Mailing", labels: [blankLabel({ name: "Alex" })] });
+  const names = blankSheet({ name: "Conference", defaultType: "name", labels: [blankLabel({ type: "name", name: "Jordan" })] });
+  const clean = sanitizeWorkspace({ projectName: "Events", sheets: [address, names], activeSheetId: names.id });
+  assert.equal(clean.sheets.length, 2);
+  assert.equal(activeSheet(clean).name, "Conference");
+  assert.equal(activeSheet(clean).defaultType, "name");
+});
+
+test("label validation is type-specific and does not claim deliverability", () => {
+  assert.equal(validateLabel(blankLabel({ type: "email", email: "bad-address" })).errors.email.length > 0, true);
+  assert.equal(validateLabel(blankLabel({ type: "email", email: "hello@example.com" })).valid, true);
+  assert.equal(validateLabel(blankLabel({ type: "address", name: "A", address1: "1 Main", city: "Austin", state: "TX", postal: "78701" })).valid, true);
+  assert.equal(validateLabel(blankLabel({ type: "address", name: "A", address1: "1 Main", city: "Austin", state: "TX", postal: "ABC" })).errors.postal.length > 0, true);
 });
 
 test("new and duplicated labels always receive an identifier", () => {

@@ -1,13 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
-  <title id="title">Labeloo</title>
-  <desc id="description">Two connected label rolls with a peeled paper tail</desc>
+  <title id="title">Labeloo name tag</title>
+  <desc id="description">A teal name tag hanging from a triangular gold lanyard with a white writing area</desc>
   <rect width="128" height="128" rx="24" fill="#16201f"/>
-  <path d="M26 67c0-20.99 17.01-38 38-38h20c10.49 0 19 8.51 19 19v37c0 7.73-6.27 14-14 14H64c-20.99 0-38-11.19-38-32Z" fill="#fffef9"/>
-  <circle cx="55" cy="62" r="22" fill="#087f78"/>
-  <circle cx="55" cy="62" r="10" fill="#16201f"/>
-  <circle cx="89" cy="62" r="18" fill="#d8a327"/>
-  <circle cx="89" cy="62" r="8" fill="#16201f"/>
-  <path d="M55 84h36c6.63 0 12 5.37 12 12v7H64c-16.02 0-29.37-7.53-34.85-19H55Z" fill="#d9efeb"/>
-  <path d="M103 96v7H91c6.63 0 12-3.13 12-7Z" fill="#d8a327"/>
-  <path d="M55 84h34c7.73 0 14 5.37 14 12v7H64c-16.02 0-29.37-7.53-34.85-19" fill="none" stroke="#087f78" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M35 8h15l14 20L78 8h15L70 42H58Z" fill="#d8a327"/>
+  <rect x="54" y="27" width="20" height="16" rx="5" fill="#fffef9"/>
+  <path d="M31 38h66a12 12 0 0 1 12 12v51a12 12 0 0 1-12 12H31a12 12 0 0 1-12-12V50a12 12 0 0 1 12-12Z" fill="#087f78"/>
+  <path d="M29 53h70v45a7 7 0 0 1-7 7H36a7 7 0 0 1-7-7V53Z" fill="#fffef9"/>
+  <path d="M42 68h44" stroke="#16201f" stroke-width="8" stroke-linecap="round"/>
+  <path d="M48 84h32" stroke="#d8a327" stroke-width="6" stroke-linecap="round"/>
 </svg>

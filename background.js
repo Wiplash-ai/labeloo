@@ -8,7 +8,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: MENU_ID,
-      title: "Add address to Labeloo",
+      title: "Add selection to Labeloo",
       contexts: ["selection"]
     });
   });
@@ -16,7 +16,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener(async (info) => {
   if (info.menuItemId !== MENU_ID || !info.selectionText?.trim()) return;
-  await chrome.storage.local.set({ labelooPendingSelection: info.selectionText.trim() });
+  await chrome.storage.local.set({ labelooPendingSelection: { type: "custom", value: info.selectionText.trim() } });
   await openEditor();
 });
 

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">Labeloo name tag</title>
+  <desc id="description">A teal name tag with a gold clip and white writing area</desc>
+  <rect width="128" height="128" rx="24" fill="#16201f"/>
+  <path d="M53 18h22a9 9 0 0 1 9 9v8H44v-8a9 9 0 0 1 9-9Z" fill="#d8a327"/>
+  <rect x="54" y="24" width="20" height="14" rx="5" fill="#fffef9"/>
+  <path d="M31 35h66a12 12 0 0 1 12 12v54a12 12 0 0 1-12 12H31a12 12 0 0 1-12-12V47a12 12 0 0 1 12-12Z" fill="#087f78"/>
+  <path d="M29 51h70v47a7 7 0 0 1-7 7H36a7 7 0 0 1-7-7V51Z" fill="#fffef9"/>
+  <path d="M42 68h44" stroke="#16201f" stroke-width="8" stroke-linecap="round"/>
+  <path d="M48 84h32" stroke="#d8a327" stroke-width="6" stroke-linecap="round"/>
+</svg>

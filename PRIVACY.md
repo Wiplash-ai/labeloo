@@ -1,10 +1,11 @@
 # Labeloo Privacy Notice
 
-Last updated: August 4, 2026
+Last updated: August 5, 2026
 
-Labeloo is local-first. Editing, importing, exporting, and printing label
-projects uses browser storage and does not require an account or upload a
-project to Wiplash. Printing happens in the current browser document.
+Labeloo is local-first. Editing, validating, importing, exporting, and printing
+label projects uses browser storage and does not require an account or upload a
+project to Wiplash. Validation checks local syntax and completeness; it does not
+confirm postal deliverability. Printing happens in the current browser document.
 
 If a user explicitly signs in and enables sync, Labeloo sends their name,
 email, project name, label and address content, and project revision to the
@@ -16,7 +17,7 @@ The extension uses:
 
 - `storage` for the local project, optional account session, and pending
   context-menu selection.
-- `contextMenus` to offer “Add address to Labeloo” for selected text.
+- `contextMenus` to offer “Add selection to Labeloo” for selected text.
 - An optional host permission for the Wiplash Labeloo API or local development
   API. The browser asks for this permission when sync is enabled.
 

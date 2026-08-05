@@ -2,7 +2,11 @@ import Papa from "papaparse";
 import { blankLabel } from "./model.js";
 
 const aliases = {
+  type: ["type", "label type"],
   name: ["name", "recipient", "full name", "organization", "company"],
+  subtitle: ["subtitle", "role", "job title"],
+  email: ["email", "email address"],
+  customText: ["custom", "custom text", "label text"],
   address1: ["address", "address 1", "address1", "street", "street address", "line 1"],
   address2: ["address 2", "address2", "suite", "unit", "line 2"],
   city: ["city", "town"],
@@ -29,8 +33,8 @@ export function parseCsv(text) {
   }
 
   const mapping = Object.fromEntries((parsed.meta.fields || []).map((header) => [header, fieldForHeader(header)]));
-  if (!Object.values(mapping).includes("address1")) {
-    throw new Error("Add an address or street column to the CSV.");
+  if (!["address1", "email", "name", "customText"].some((field) => Object.values(mapping).includes(field))) {
+    throw new Error("Add a name, address, email, or label text column to the CSV.");
   }
 
   const labels = parsed.data.map((row) => {
@@ -38,10 +42,13 @@ export function parseCsv(text) {
     for (const [header, field] of Object.entries(mapping)) {
       if (field && !values[field]) values[field] = String(row[header] ?? "").trim();
     }
-    return blankLabel(values);
-  }).filter((label) => label.name || label.address1 || label.city || label.postal);
+    const type = ["address", "name", "email", "custom"].includes(values.type)
+      ? values.type
+      : values.email ? "email" : values.customText ? "custom" : values.address1 ? "address" : "name";
+    return blankLabel({ ...values, type });
+  }).filter((label) => label.name || label.address1 || label.city || label.postal || label.email || label.customText);
 
-  if (!labels.length) throw new Error("No usable address rows were found in the CSV.");
+  if (!labels.length) throw new Error("No usable label rows were found in the CSV.");
   return labels;
 }
 
@@ -51,9 +58,13 @@ function quote(value) {
 }
 
 export function labelsToCsv(labels) {
-  const headers = ["Name", "Address 1", "Address 2", "City", "State", "Postal Code", "Country"];
+  const headers = ["Type", "Name", "Subtitle", "Email", "Custom Text", "Address 1", "Address 2", "City", "State", "Postal Code", "Country"];
   const rows = labels.map((label) => [
+    label.type,
     label.name,
+    label.subtitle,
+    label.email,
+    label.customText,
     label.address1,
     label.address2,
     label.city,
