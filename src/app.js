@@ -108,8 +108,12 @@ const elements = Object.fromEntries([
   "csvFileName",
   "importMessage",
   "confirmImportButton",
-  "toast"
-  ,"accountDialog","closeAccountButton","signedOutAccount","signedInAccount","accountNameField","accountName","accountEmail","accountPassword","accountApiBase","accountSubmit","accountUserName","accountUserEmail","cloudProjectStatus","conflictActions","useCloudButton","keepLocalButton","syncNowButton","logoutButton","accountMessage","printPortal"
+  "toast",
+  "accountDialog", "closeAccountButton", "signedOutAccount", "signedInAccount",
+  "accountNameField", "accountName", "accountEmail", "accountPassword", "accountApiBase",
+  "accountSubmit", "accountUserName", "accountUserEmail", "cloudProjectStatus",
+  "conflictActions", "useCloudButton", "keepLocalButton", "syncNowButton", "logoutButton",
+  "accountMessage", "printPortal"
 ].map((id) => [id, document.getElementById(id)]));
 
 let state = await loadWorkspace();
@@ -178,17 +182,22 @@ function renderAccount() {
   }
 }
 
+function setAccountMessage(message, isError = false) {
+  elements.accountMessage.textContent = message;
+  elements.accountMessage.classList.toggle("error", isError);
+}
+
 async function syncToCloud(force = false) {
   if (!account.token) return;
   elements.saveState.textContent = "Syncing…";
   try {
     account = await pushWorkspace(account, sanitizeWorkspace(state), force);
     elements.saveState.textContent = "Saved + synced";
-    elements.accountMessage.textContent = "Project synced.";
+    setAccountMessage("Project synced.");
   } catch (error) {
     account = await loadAccount();
     elements.saveState.textContent = account.conflict ? "Sync needs review" : "Saved locally";
-    elements.accountMessage.textContent = error.message;
+    setAccountMessage(error.message, true);
   }
   renderAccount();
 }
@@ -499,7 +508,7 @@ window.addEventListener("afterprint", () => {
 elements.accountButton.addEventListener("click", () => {
   renderAccount();
   elements.accountApiBase.value = account.apiBase;
-  elements.accountMessage.textContent = "";
+  setAccountMessage("");
   elements.accountDialog.showModal();
 });
 elements.closeAccountButton.addEventListener("click", () => elements.accountDialog.close());
@@ -511,7 +520,7 @@ document.querySelectorAll("[data-account-mode]").forEach((button) => button.addE
   elements.accountPassword.autocomplete = accountMode === "register" ? "new-password" : "current-password";
 }));
 elements.accountSubmit.addEventListener("click", async () => {
-  elements.accountMessage.textContent = "Connecting…";
+  setAccountMessage("Connecting…");
   elements.accountSubmit.disabled = true;
   try {
     account.apiBase = elements.accountApiBase.value;
@@ -524,7 +533,7 @@ elements.accountSubmit.addEventListener("click", async () => {
     await syncToCloud();
     showToast("Cloud sync connected");
   } catch (error) {
-    elements.accountMessage.textContent = error.message;
+    setAccountMessage(error.message, true);
   } finally {
     elements.accountSubmit.disabled = false;
   }
@@ -545,7 +554,7 @@ elements.useCloudButton.addEventListener("click", async () => {
     render();
     renderAccount();
     showToast("Cloud copy loaded");
-  } catch (error) { elements.accountMessage.textContent = error.message; }
+  } catch (error) { setAccountMessage(error.message, true); }
 });
 elements.keepLocalButton.addEventListener("click", () => syncToCloud(true));
 elements.searchInput.addEventListener("input", renderList);
