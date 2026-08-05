@@ -1,0 +1,20 @@
+{
+  "name": "labeloo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev-server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "verify": "npm test && npm run build",
+    "package:stores": "node scripts/package-stores.mjs"
+  },
+  "dependencies": {
+    "lucide": "^0.468.0",
+    "papaparse": "^5.4.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

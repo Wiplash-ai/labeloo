@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Labeloo</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header>
+        <img src="assets/labeloo-mark.svg" alt="" width="38" height="38">
+        <div><strong>Labeloo</strong><span>Quick add</span></div>
+        <button id="openButton" type="button" title="Open label workbench" aria-label="Open label workbench"><i data-lucide="external-link"></i></button>
+      </header>
+      <label for="addressInput">Paste one address</label>
+      <textarea id="addressInput" rows="6" placeholder="Name&#10;123 Paper Street&#10;Austin, TX 78701"></textarea>
+      <button id="addButton" class="primary" type="button"><i data-lucide="plus"></i><span>Add to sheet</span></button>
+      <p id="message" role="status"></p>
+      <footer>Produced by <a href="https://wiplash.ai" target="_blank" rel="noreferrer">Wiplash.ai</a></footer>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f2ec">
+    <title>Labeloo</title>
+    <link rel="stylesheet" href="app.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <a class="brand" href="app.html" aria-label="Labeloo home">
+          <img src="assets/labeloo-mark.svg" alt="" width="42" height="42">
+          <span>
+            <strong>Labeloo</strong>
+            <small>Address label workbench</small>
+          </span>
+        </a>
+
+        <div class="project-control">
+          <label for="projectName">Project</label>
+          <input id="projectName" type="text" maxlength="80" value="My label sheet">
+          <span id="saveState" class="save-state">Saved locally</span>
+        </div>
+
+        <div class="header-actions">
+          <button id="importButton" class="button button--quiet" type="button" title="Import addresses">
+            <i data-lucide="file-up"></i><span>Import</span>
+          </button>
+          <button id="exportButton" class="icon-button" type="button" title="Export CSV" aria-label="Export CSV">
+            <i data-lucide="download"></i>
+          </button>
+          <button id="printButton" class="button button--primary" type="button">
+            <i data-lucide="printer"></i><span>Print labels</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="label-library" aria-label="Labels">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Sheet contents</span>
+              <h1>Labels</h1>
+            </div>
+            <button id="addLabelButton" class="icon-button icon-button--accent" type="button" title="Add label" aria-label="Add label">
+              <i data-lucide="plus"></i>
+            </button>
+          </div>
+
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <input id="searchInput" type="search" placeholder="Find a label" autocomplete="off">
+          </div>
+
+          <div class="library-meta">
+            <span id="labelCount">0 labels</span>
+            <span id="sheetCount">1 sheet</span>
+          </div>
+
+          <div id="labelList" class="label-list"></div>
+          <button id="pasteAddressesButton" class="paste-action" type="button">
+            <i data-lucide="clipboard-paste"></i>
+            <span><strong>Paste a list</strong><small>One address block at a time</small></span>
+          </button>
+        </aside>
+
+        <section class="sheet-workbench" aria-label="Print preview">
+          <div class="sheet-toolbar">
+            <div class="page-stepper" aria-label="Sheet navigation">
+              <button id="previousSheetButton" class="icon-button" type="button" title="Previous sheet" aria-label="Previous sheet">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <span id="sheetPosition">Sheet 1 of 1</span>
+              <button id="nextSheetButton" class="icon-button" type="button" title="Next sheet" aria-label="Next sheet">
+                <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-fields">
+              <label>
+                <span>Paper</span>
+                <select id="templateSelect">
+                  <option value="address-30">30-up address · 5160 compatible</option>
+                </select>
+              </label>
+              <label class="start-field">
+                <span>Start at</span>
+                <input id="startSlotInput" type="number" min="1" max="30" value="1">
+              </label>
+              <label>
+                <span>Zoom</span>
+                <input id="zoomInput" type="range" min="65" max="115" value="86">
+              </label>
+            </div>
+          </div>
+
+          <div id="sheetStage" class="sheet-stage">
+            <div id="sheetCanvas" class="sheet-canvas" aria-label="Address label sheet preview"></div>
+          </div>
+          <p class="sheet-note"><i data-lucide="info"></i> Use a test sheet before printing on label stock. Browser print scaling must stay at 100%.</p>
+        </section>
+
+        <aside class="inspector" aria-label="Label editor">
+          <div id="emptyInspector" class="empty-inspector">
+            <span class="empty-mark"><i data-lucide="mouse-pointer-2"></i></span>
+            <h2>Select a label</h2>
+            <p>Choose a label from the sheet or list to edit its address and typography.</p>
+          </div>
+
+          <div id="editorInspector" class="editor-inspector hidden">
+            <div class="panel-heading inspector-heading">
+              <div>
+                <span id="selectedPosition" class="eyebrow">Label 1</span>
+                <h2>Edit label</h2>
+              </div>
+              <div class="inline-actions">
+                <button id="duplicateLabelButton" class="icon-button" type="button" title="Duplicate label" aria-label="Duplicate label"><i data-lucide="copy"></i></button>
+                <button id="deleteLabelButton" class="icon-button icon-button--danger" type="button" title="Delete label" aria-label="Delete label"><i data-lucide="trash-2"></i></button>
+              </div>
+            </div>
+
+            <form id="labelForm" class="label-form">
+              <label class="field field--wide">
+                <span>Name or organization</span>
+                <input id="nameInput" type="text" maxlength="120" autocomplete="off">
+              </label>
+              <label class="field field--wide">
+                <span>Address line 1</span>
+                <input id="address1Input" type="text" maxlength="120" autocomplete="off">
+              </label>
+              <label class="field field--wide">
+                <span>Address line 2</span>
+                <input id="address2Input" type="text" maxlength="120" autocomplete="off">
+              </label>
+              <label class="field field--city">
+                <span>City</span>
+                <input id="cityInput" type="text" maxlength="80" autocomplete="off">
+              </label>
+              <label class="field field--state">
+                <span>State</span>
+                <input id="stateInput" type="text" maxlength="40" autocomplete="off">
+              </label>
+              <label class="field field--postal">
+                <span>ZIP / postal</span>
+                <input id="postalInput" type="text" maxlength="20" autocomplete="off">
+              </label>
+              <label class="field field--wide">
+                <span>Country</span>
+                <input id="countryInput" type="text" maxlength="80" autocomplete="off">
+              </label>
+
+              <div class="form-divider"><span>Type</span></div>
+
+              <label class="field field--wide">
+                <span>Alignment</span>
+                <div id="alignmentControl" class="segmented-control" role="group" aria-label="Alignment">
+                  <button type="button" data-align="left" class="selected" title="Align left"><i data-lucide="align-left"></i></button>
+                  <button type="button" data-align="center" title="Align center"><i data-lucide="align-center"></i></button>
+                </div>
+              </label>
+              <label class="field field--font">
+                <span>Font size</span>
+                <input id="fontSizeInput" type="number" min="7" max="14" step="0.5" value="10">
+              </label>
+              <label class="field field--font">
+                <span>Line height</span>
+                <input id="lineHeightInput" type="number" min="1" max="1.6" step="0.05" value="1.15">
+              </label>
+            </form>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <dialog id="importDialog" class="import-dialog">
+      <form method="dialog" class="dialog-shell">
+        <header>
+          <div>
+            <span class="eyebrow">Bring your list</span>
+            <h2>Import addresses</h2>
+          </div>
+          <button id="closeImportButton" class="icon-button" value="cancel" title="Close" aria-label="Close"><i data-lucide="x"></i></button>
+        </header>
+
+        <div class="import-tabs" role="tablist">
+          <button type="button" class="selected" data-import-tab="paste">Paste addresses</button>
+          <button type="button" data-import-tab="csv">Upload CSV</button>
+        </div>
+
+        <section id="pastePanel" class="import-panel">
+          <label class="field field--wide">
+            <span>Separate labels with a blank line</span>
+            <textarea id="pasteInput" rows="12" placeholder="Alex Rivera&#10;123 Splash Lane&#10;Fort Worth, TX 76102&#10;&#10;Wiplash Labs&#10;44 Signal Street, Suite 8&#10;Austin, TX 78701"></textarea>
+          </label>
+        </section>
+
+        <section id="csvPanel" class="import-panel hidden">
+          <label class="file-drop" for="csvInput">
+            <i data-lucide="file-spreadsheet"></i>
+            <strong>Choose a CSV file</strong>
+            <span>Name, address, city, state, and postal columns are detected automatically.</span>
+            <input id="csvInput" type="file" accept=".csv,text/csv">
+          </label>
+          <p id="csvFileName" class="file-name"></p>
+        </section>
+
+        <footer>
+          <span id="importMessage" class="dialog-message"></span>
+          <div>
+            <button class="button button--quiet" value="cancel">Cancel</button>
+            <button id="confirmImportButton" class="button button--primary" type="button"><i data-lucide="plus"></i><span>Add labels</span></button>
+          </div>
+        </footer>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,34 @@
+import { TEMPLATE, labelLines, labelPosition, sheetCount } from "./model.js";
+import { loadWorkspace } from "./storage.js";
+
+const state = await loadWorkspace();
+const sheets = document.getElementById("printSheets");
+document.getElementById("printProjectName").textContent = state.projectName || "Labeloo";
+
+for (let sheetIndex = 0; sheetIndex < sheetCount(state); sheetIndex += 1) {
+  const page = document.createElement("section");
+  page.className = "print-sheet";
+  state.labels.forEach((label, index) => {
+    const position = labelPosition(index, state.startSlot);
+    if (position.sheet !== sheetIndex) return;
+    const row = Math.floor(position.slot / TEMPLATE.columns);
+    const column = position.slot % TEMPLATE.columns;
+    const cell = document.createElement("div");
+    cell.className = `print-label align-${label.align}`;
+    cell.style.left = `${TEMPLATE.leftMarginIn + (column * TEMPLATE.horizontalPitchIn)}in`;
+    cell.style.top = `${TEMPLATE.topMarginIn + (row * TEMPLATE.verticalPitchIn)}in`;
+    cell.style.width = `${TEMPLATE.labelWidthIn}in`;
+    cell.style.height = `${TEMPLATE.labelHeightIn}in`;
+    cell.style.fontSize = `${label.fontSize}pt`;
+    cell.style.lineHeight = String(label.lineHeight);
+    labelLines(label).forEach((line) => {
+      const lineNode = document.createElement("span");
+      lineNode.textContent = line;
+      cell.append(lineNode);
+    });
+    page.append(cell);
+  });
+  sheets.append(page);
+}
+
+document.getElementById("printNowButton").addEventListener("click", () => window.print());
