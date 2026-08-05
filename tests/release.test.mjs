@@ -18,6 +18,14 @@ test("runtime has no analytics and contains an explicit optional sync client", a
   assert.doesNotMatch(source, /google-analytics|mixpanel|segment\.io|XMLHttpRequest/i);
   assert.match(source, /optional cloud sync/i);
   assert.match(source, /chrome\.permissions\.request/);
+  assert.match(source, /data_collection/);
+});
+
+test("Firefox declares optional cloud-sync data collection", async () => {
+  const buildScript = await readFile(new URL("scripts/build.mjs", root), "utf8");
+  assert.match(buildScript, /required:\s*\["none"\]/);
+  assert.match(buildScript, /optional:\s*\["authenticationInfo",\s*"personallyIdentifyingInfo"\]/);
+  assert.match(buildScript, /strict_min_version:\s*"142\.0"/);
 });
 
 test("print output stays in the current document and preserves Letter geometry", async () => {

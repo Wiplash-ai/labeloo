@@ -32,7 +32,11 @@ export async function saveAccount(account) {
 async function requestOriginPermission(apiBase) {
   if (!globalThis.chrome?.permissions?.request) return true;
   const origin = `${new URL(apiBase).origin}/*`;
-  return chrome.permissions.request({ origins: [origin] });
+  const permissions = { origins: [origin] };
+  if (globalThis.browser?.permissions) {
+    permissions.data_collection = ["authenticationInfo", "personallyIdentifyingInfo"];
+  }
+  return chrome.permissions.request(permissions);
 }
 
 async function api(account, path, options = {}) {
