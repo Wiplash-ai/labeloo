@@ -1,10 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
   <title id="title">Labeloo</title>
-  <desc id="description">A teal address label with a gold registration dot</desc>
+  <desc id="description">Two connected label rolls with a peeled paper tail</desc>
   <rect width="128" height="128" rx="24" fill="#16201f"/>
-  <path d="M22 36c0-7.732 6.268-14 14-14h56c7.732 0 14 6.268 14 14v56c0 7.732-6.268 14-14 14H36c-7.732 0-14-6.268-14-14V36Z" fill="#fffef9"/>
-  <path d="M22 52h84" stroke="#087f78" stroke-width="8"/>
-  <circle cx="92" cy="36" r="8" fill="#d8a327"/>
-  <path d="M39 69h50M39 83h38" stroke="#16201f" stroke-width="7" stroke-linecap="round"/>
-  <path d="M22 36c0-7.732 6.268-14 14-14h56c7.732 0 14 6.268 14 14v56c0 7.732-6.268 14-14 14H36c-7.732 0-14-6.268-14-14V36Z" fill="none" stroke="#087f78" stroke-width="4"/>
+  <path d="M26 67c0-20.99 17.01-38 38-38h20c10.49 0 19 8.51 19 19v37c0 7.73-6.27 14-14 14H64c-20.99 0-38-11.19-38-32Z" fill="#fffef9"/>
+  <circle cx="55" cy="62" r="22" fill="#087f78"/>
+  <circle cx="55" cy="62" r="10" fill="#16201f"/>
+  <circle cx="89" cy="62" r="18" fill="#d8a327"/>
+  <circle cx="89" cy="62" r="8" fill="#16201f"/>
+  <path d="M55 84h36c6.63 0 12 5.37 12 12v7H64c-16.02 0-29.37-7.53-34.85-19H55Z" fill="#d9efeb"/>
+  <path d="M103 96v7H91c6.63 0 12-3.13 12-7Z" fill="#d8a327"/>
+  <path d="M55 84h34c7.73 0 14 5.37 14 12v7H64c-16.02 0-29.37-7.53-34.85-19" fill="none" stroke="#087f78" stroke-width="4" stroke-linejoin="round"/>
 </svg>

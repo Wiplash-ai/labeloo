@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ChevronUp,
   ClipboardPaste,
+  Cloud,
   Copy,
   Download,
   FileSpreadsheet,
@@ -14,6 +15,7 @@ import {
   MousePointer2,
   Plus,
   Printer,
+  RefreshCw,
   Search,
   Trash2,
   X,
@@ -31,6 +33,7 @@ import {
   sheetCount
 } from "./model.js";
 import { loadWorkspace, saveWorkspace, takePendingSelection } from "./storage.js";
+import { authenticate, loadAccount, logout, pullWorkspace, pushWorkspace } from "./sync.js";
 
 createIcons({
   icons: {
@@ -41,6 +44,7 @@ createIcons({
     ChevronRight,
     ChevronUp,
     ClipboardPaste,
+    Cloud,
     Copy,
     Download,
     FileSpreadsheet,
@@ -49,6 +53,7 @@ createIcons({
     MousePointer2,
     Plus,
     Printer,
+    RefreshCw,
     Search,
     Trash2,
     X
@@ -62,6 +67,8 @@ const elements = Object.fromEntries([
   "importButton",
   "exportButton",
   "printButton",
+  "accountButton",
+  "accountButtonLabel",
   "addLabelButton",
   "searchInput",
   "labelCount",
@@ -102,6 +109,7 @@ const elements = Object.fromEntries([
   "importMessage",
   "confirmImportButton",
   "toast"
+  ,"accountDialog","closeAccountButton","signedOutAccount","signedInAccount","accountNameField","accountName","accountEmail","accountPassword","accountApiBase","accountSubmit","accountUserName","accountUserEmail","cloudProjectStatus","conflictActions","useCloudButton","keepLocalButton","syncNowButton","logoutButton","accountMessage","printPortal"
 ].map((id) => [id, document.getElementById(id)]));
 
 let state = await loadWorkspace();
@@ -109,6 +117,9 @@ let csvText = "";
 let activeImportTab = "paste";
 let saveTimer = null;
 let toastTimer = null;
+let cloudTimer = null;
+let account = await loadAccount();
+let accountMode = "login";
 
 if (!state.selectedId && state.labels[0]) state.selectedId = state.labels[0].id;
 
@@ -147,7 +158,64 @@ function scheduleSave() {
     state = await saveWorkspace(state);
     elements.saveState.textContent = "Saved locally";
     elements.saveState.classList.remove("saving");
+    if (account.token && !account.conflict) {
+      clearTimeout(cloudTimer);
+      cloudTimer = setTimeout(() => syncToCloud(), 850);
+    }
   }, 220);
+}
+
+function renderAccount() {
+  const signedIn = Boolean(account.token && account.user);
+  elements.accountButtonLabel.textContent = signedIn ? "Synced" : "Local only";
+  elements.signedOutAccount.classList.toggle("hidden", signedIn);
+  elements.signedInAccount.classList.toggle("hidden", !signedIn);
+  elements.conflictActions.classList.toggle("hidden", !account.conflict);
+  if (signedIn) {
+    elements.accountUserName.textContent = account.user.name;
+    elements.accountUserEmail.textContent = account.user.email;
+    elements.cloudProjectStatus.textContent = account.conflict ? "Needs your choice" : account.projectId ? `Cloud revision ${account.revision}` : "Ready for first sync";
+  }
+}
+
+async function syncToCloud(force = false) {
+  if (!account.token) return;
+  elements.saveState.textContent = "Syncing…";
+  try {
+    account = await pushWorkspace(account, sanitizeWorkspace(state), force);
+    elements.saveState.textContent = "Saved + synced";
+    elements.accountMessage.textContent = "Project synced.";
+  } catch (error) {
+    account = await loadAccount();
+    elements.saveState.textContent = account.conflict ? "Sync needs review" : "Saved locally";
+    elements.accountMessage.textContent = error.message;
+  }
+  renderAccount();
+}
+
+function printLabels() {
+  elements.printPortal.replaceChildren();
+  const count = sheetCount(state);
+  for (let sheet = 0; sheet < count; sheet += 1) {
+    const page = document.createElement("section");
+    page.className = "print-sheet";
+    for (let slot = 0; slot < TEMPLATE.labelsPerSheet; slot += 1) {
+      const globalSlot = sheet * TEMPLATE.labelsPerSheet + slot;
+      const index = globalSlot - (state.startSlot - 1);
+      const label = index >= 0 ? state.labels[index] : null;
+      const cell = document.createElement("div");
+      cell.className = `print-label${label ? ` align-${label.align}` : ""}`;
+      if (label) {
+        cell.style.fontSize = `${label.fontSize}pt`;
+        cell.style.lineHeight = String(label.lineHeight);
+        labelLines(label).forEach((line) => { const span = document.createElement("span"); span.textContent = line; cell.append(span); });
+      }
+      page.append(cell);
+    }
+    elements.printPortal.append(page);
+  }
+  elements.printPortal.setAttribute("aria-hidden", "false");
+  requestAnimationFrame(() => window.print());
 }
 
 function selectLabel(id, moveToSheet = true) {
@@ -423,18 +491,63 @@ elements.importButton.addEventListener("click", () => showImportDialog("paste"))
 elements.closeImportButton.addEventListener("click", () => elements.importDialog.close());
 elements.confirmImportButton.addEventListener("click", importLabels);
 elements.exportButton.addEventListener("click", exportCsv);
-elements.printButton.addEventListener("click", async () => {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    showToast("Allow popups to open the print sheet");
-    return;
-  }
-  printWindow.opener = null;
-  printWindow.document.title = "Preparing labels...";
-  printWindow.document.body.textContent = "Preparing your label sheet...";
-  await saveWorkspace(state);
-  printWindow.location.replace("print.html");
+elements.printButton.addEventListener("click", printLabels);
+window.addEventListener("afterprint", () => {
+  elements.printPortal.replaceChildren();
+  elements.printPortal.setAttribute("aria-hidden", "true");
 });
+elements.accountButton.addEventListener("click", () => {
+  renderAccount();
+  elements.accountApiBase.value = account.apiBase;
+  elements.accountMessage.textContent = "";
+  elements.accountDialog.showModal();
+});
+elements.closeAccountButton.addEventListener("click", () => elements.accountDialog.close());
+document.querySelectorAll("[data-account-mode]").forEach((button) => button.addEventListener("click", () => {
+  accountMode = button.dataset.accountMode;
+  document.querySelectorAll("[data-account-mode]").forEach((item) => item.classList.toggle("selected", item === button));
+  elements.accountNameField.classList.toggle("hidden", accountMode !== "register");
+  elements.accountSubmit.textContent = accountMode === "register" ? "Create account" : "Sign in";
+  elements.accountPassword.autocomplete = accountMode === "register" ? "new-password" : "current-password";
+}));
+elements.accountSubmit.addEventListener("click", async () => {
+  elements.accountMessage.textContent = "Connecting…";
+  elements.accountSubmit.disabled = true;
+  try {
+    account.apiBase = elements.accountApiBase.value;
+    account = await authenticate(account, accountMode, {
+      email: elements.accountEmail.value,
+      password: elements.accountPassword.value,
+      ...(accountMode === "register" ? { name: elements.accountName.value } : {})
+    });
+    renderAccount();
+    await syncToCloud();
+    showToast("Cloud sync connected");
+  } catch (error) {
+    elements.accountMessage.textContent = error.message;
+  } finally {
+    elements.accountSubmit.disabled = false;
+  }
+});
+elements.syncNowButton.addEventListener("click", () => syncToCloud());
+elements.logoutButton.addEventListener("click", async () => {
+  account = await logout(account);
+  renderAccount();
+  elements.accountDialog.close();
+  elements.saveState.textContent = "Saved locally";
+  showToast("Signed out. Local labels were kept.");
+});
+elements.useCloudButton.addEventListener("click", async () => {
+  try {
+    state = sanitizeWorkspace(await pullWorkspace(account));
+    account = await loadAccount();
+    await saveWorkspace(state);
+    render();
+    renderAccount();
+    showToast("Cloud copy loaded");
+  } catch (error) { elements.accountMessage.textContent = error.message; }
+});
+elements.keepLocalButton.addEventListener("click", () => syncToCloud(true));
 elements.searchInput.addEventListener("input", renderList);
 elements.projectName.addEventListener("input", () => {
   state.projectName = elements.projectName.value;
@@ -485,4 +598,5 @@ window.addEventListener("beforeunload", () => {
 });
 
 render();
+renderAccount();
 scheduleSave();

@@ -8,7 +8,7 @@ Labeloo is a local-first address label workbench and browser extension. Select
 an address on a webpage, send it to Labeloo, edit the sheet, and print on common
 30-up US Letter address-label stock.
 
-## V1 features
+## Features
 
 - Browser context-menu capture for selected addresses.
 - Quick-add extension popup.
@@ -17,11 +17,13 @@ an address on a webpage, send it to Labeloo, edit the sheet, and print on common
 - Add, edit, duplicate, reorder, search, and delete labels.
 - Paste address blocks or import CSV files with flexible column names.
 - Browser-local auto-save and CSV export.
+- Optional Labeloo account and revision-safe cross-device project sync.
 - Print at 100% scale or use the browser's Save as PDF command.
 - Chrome, Edge, Opera, Firefox, and standalone web builds.
 
-Labeloo does not send addresses or browsing data to Wiplash or another service.
-It has no account, analytics, advertising, backend, or remote API.
+Labeloo is local-first and works without an account. Address data is sent to
+Wiplash only when a user explicitly signs in and enables project sync. Labeloo
+has no analytics or advertising.
 
 ## Development
 
@@ -53,7 +55,8 @@ npm run package:stores
 
 - `storage` keeps the current project and pending selected address locally.
 - `contextMenus` adds “Add address to Labeloo” when text is selected.
-- No host permissions are requested.
+- Sync service access is an optional host permission requested only when a user
+  signs in. Editing, importing, exporting, and printing do not require it.
 
 Address labels manufactured by Avery are referenced solely for compatibility.
 Labeloo is not affiliated with or endorsed by Avery Products Corporation.

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#16201f">
+  <meta name="description" content="Labeloo turns pasted addresses and spreadsheets into print-ready Avery-compatible label sheets. Work locally or optionally sync across browsers.">
+  <link rel="canonical" href="https://labs.wiplash.ai/labeloo/">
+  <meta property="og:title" content="Labeloo | Address labels without the wrestling match">
+  <meta property="og:description" content="Build, import, proof, and print address-label sheets from a private local workbench.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://labs.wiplash.ai/labeloo/">
+  <link rel="icon" href="assets/labeloo-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <title>Labeloo | Address labels without the wrestling match</title>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/labeloo/"><img src="assets/labeloo-mark.svg" alt=""><strong>Labeloo</strong></a>
+    <nav><a href="#workflow">How it works</a><a href="privacy/">Privacy</a><a href="/">Wiplash Labs</a></nav>
+    <a class="open-app" href="app/">Open Labeloo</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Address label workbench</span>
+        <h1>Labels without the <span>wrestling match.</span></h1>
+        <p>Paste an address, import a list, arrange the sheet, and print it at the right size. Your work stays in this browser unless you choose cloud sync.</p>
+        <div class="hero-actions"><a class="primary" href="app/">Open the workbench</a><a href="#workflow">See the workflow</a></div>
+        <ul class="trust-list"><li>No account required</li><li>Avery 5160 compatible</li><li>Optional cross-device sync</li></ul>
+      </div>
+
+      <div class="workbench-demo" aria-label="Interactive Labeloo preview">
+        <div class="demo-bar"><div class="demo-brand"><img src="assets/labeloo-mark.svg" alt=""><span>Labeloo</span></div><span>Saved locally</span><button type="button" id="demoPrint">Print labels</button></div>
+        <div class="demo-body">
+          <aside><small>Sheet contents</small><strong>Labels</strong><button class="label-row active" type="button" data-name="Jordan Culver" data-address="44 Signal Street" data-city="Austin, TX 78701"><i>01</i><span>Jordan Culver<small>44 Signal Street</small></span></button><button class="label-row" type="button" data-name="Wiplash Labs" data-address="128 Waterpark Way" data-city="Fort Worth, TX 76102"><i>02</i><span>Wiplash Labs<small>128 Waterpark Way</small></span></button><button class="label-row" type="button" data-name="Avery Example" data-address="30 Paper Trail" data-city="Denver, CO 80202"><i>03</i><span>Avery Example<small>30 Paper Trail</small></span></button></aside>
+          <div class="sheet-wrap"><div class="sheet" id="demoSheet"></div></div>
+          <aside class="editor"><small>Edit label</small><label>Name<input id="demoName" value="Jordan Culver"></label><label>Address<input id="demoAddress" value="44 Signal Street"></label><label>City, state & ZIP<input id="demoCity" value="Austin, TX 78701"></label></aside>
+        </div>
+        <div id="demoToast" class="demo-toast">Print preview ready</div>
+      </div>
+    </section>
+
+    <section id="workflow" class="workflow">
+      <div><span>01</span><h2>Bring the addresses.</h2><p>Paste blocks of text or import CSV, Excel, Numbers, JSON, plain text, and text-based PDF lists through the API.</p></div>
+      <div><span>02</span><h2>Fix the sheet.</h2><p>Edit, reorder, align, duplicate, search, and choose the first physical label so partly used sheets do not go to waste.</p></div>
+      <div><span>03</span><h2>Print at 100%.</h2><p>Review a true-size Letter preview, then print locally. The browser app does not upload your labels to print them.</p></div>
+    </section>
+
+    <section class="local-band"><div><span class="eyebrow">Local first, cloud optional</span><h2>Your address book is not the admission price.</h2></div><p>Labeloo works without registration. Sign in only when you want the same projects on another machine. Commercial automation uses a separate scoped API key.</p><a href="privacy/">Read the privacy policy</a></section>
+  </main>
+  <footer><a href="/">Wiplash Labs</a><span>Labeloo is produced by <a href="https://wiplash.ai/">Wiplash.ai</a></span><a href="privacy/">Privacy</a></footer>
+  <script src="site.js" defer></script>
+</body>
+</html>

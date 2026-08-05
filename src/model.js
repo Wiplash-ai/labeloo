@@ -41,6 +41,7 @@ export function blankLabel(overrides = {}) {
 export function sampleWorkspace() {
   return {
     version: 1,
+    clientId: uid(),
     projectName: "My label sheet",
     templateId: TEMPLATE.id,
     startSlot: 1,
@@ -102,6 +103,7 @@ export function sanitizeWorkspace(raw) {
   const selectedId = labels.some((label) => label.id === raw.selectedId) ? raw.selectedId : null;
   return {
     version: 1,
+    clientId: typeof raw.clientId === "string" && raw.clientId.length >= 8 ? raw.clientId.slice(0, 80) : uid(),
     projectName: String(raw.projectName || "My label sheet").trim().slice(0, 80),
     templateId: TEMPLATE.id,
     startSlot: Number.isInteger(startSlot) ? Math.min(30, Math.max(1, startSlot)) : 1,

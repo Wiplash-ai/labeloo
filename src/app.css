@@ -74,6 +74,8 @@ svg {
   display: none !important;
 }
 
+.print-portal { display: none; }
+
 .app-shell {
   height: 100%;
   display: grid;
@@ -208,6 +210,41 @@ svg {
 
 .button--primary:hover {
   background: #09958b;
+}
+
+.account-dialog { width: min(520px, calc(100vw - 28px)); padding: 0; border: 0; border-radius: 7px; color: var(--ink); background: var(--paper); box-shadow: var(--shadow); }
+.account-dialog::backdrop { background: rgba(12, 19, 18, .62); backdrop-filter: blur(4px); }
+.account-shell { display: grid; gap: 0; }
+.account-shell > header { min-height: 74px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.account-shell h2 { margin: 3px 0 0; font-family: Georgia, serif; font-size: 23px; }
+.account-content { padding: 20px; display: grid; gap: 14px; }
+.account-content > p { margin: 0 0 2px; color: #5e6b68; font-size: 13px; line-height: 1.55; }
+.account-tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); }
+.account-tabs button { min-height: 35px; border: 0; border-radius: 3px; background: transparent; color: #68736f; font-weight: 700; }
+.account-tabs button.selected { background: var(--paper); color: var(--teal-dark); box-shadow: 0 1px 5px rgba(0,0,0,.09); }
+.sync-service { color: #68736f; font-size: 11px; }
+.sync-service select { width: 100%; height: 36px; margin-top: 8px; border: 1px solid var(--line); border-radius: 4px; background: white; }
+.account-identity { display: flex; align-items: center; gap: 12px; }
+.account-avatar { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--teal); }
+.account-identity div { display: grid; gap: 3px; }
+.account-identity small { color: #68736f; }
+.sync-status { padding: 13px; display: flex; justify-content: space-between; gap: 12px; border: 1px solid var(--line); background: var(--panel); font-size: 12px; }
+.sync-status span { color: #68736f; }
+.conflict-actions { padding: 14px; display: flex; flex-wrap: wrap; gap: 8px; border: 1px solid #d8a327; background: var(--gold-wash); }
+.conflict-actions p { width: 100%; margin: 0 0 3px; font-size: 12px; }
+.account-actions { display: flex; gap: 9px; }
+.account-shell > .dialog-message { min-height: 20px; margin: 0; padding: 0 20px 18px; color: var(--danger); font-size: 12px; }
+
+@media print {
+  @page { size: letter; margin: 0; }
+  html, body { width: auto; height: auto; overflow: visible; background: white; }
+  .app-shell, dialog, .toast { display: none !important; }
+  .print-portal { display: block !important; }
+  .print-sheet { width: 8.5in; height: 11in; padding: .5in .1875in; display: grid; grid-template-columns: repeat(3, 2.625in); grid-template-rows: repeat(10, 1in); column-gap: .125in; break-after: page; }
+  .print-sheet:last-child { break-after: auto; }
+  .print-label { width: 2.625in; height: 1in; padding: .08in .13in; display: flex; flex-direction: column; justify-content: center; overflow: hidden; font-family: Arial, sans-serif; color: #000; }
+  .print-label.align-center { align-items: center; text-align: center; }
+  .print-label span { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 
 .icon-button {

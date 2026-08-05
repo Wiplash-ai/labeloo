@@ -25,6 +25,9 @@
         </div>
 
         <div class="header-actions">
+          <button id="accountButton" class="button button--quiet" type="button" title="Account and sync">
+            <i data-lucide="cloud"></i><span id="accountButtonLabel">Local only</span>
+          </button>
           <button id="importButton" class="button button--quiet" type="button" title="Import addresses">
             <i data-lucide="file-up"></i><span>Import</span>
           </button>
@@ -215,6 +218,36 @@
         </footer>
       </form>
     </dialog>
+
+    <dialog id="accountDialog" class="account-dialog">
+      <div class="dialog-shell account-shell">
+        <header>
+          <div><span class="eyebrow">Optional cloud sync</span><h2 id="accountTitle">Your Labeloo account</h2></div>
+          <button id="closeAccountButton" class="icon-button" type="button" title="Close" aria-label="Close"><i data-lucide="x"></i></button>
+        </header>
+        <section id="signedOutAccount" class="account-content">
+          <p>Your labels stay in this browser unless you sign in and choose to sync them.</p>
+          <div class="account-tabs" role="tablist">
+            <button type="button" class="selected" data-account-mode="login">Sign in</button>
+            <button type="button" data-account-mode="register">Create account</button>
+          </div>
+          <label id="accountNameField" class="field field--wide hidden"><span>Name</span><input id="accountName" type="text" maxlength="100" autocomplete="name"></label>
+          <label class="field field--wide"><span>Email</span><input id="accountEmail" type="email" maxlength="254" autocomplete="email"></label>
+          <label class="field field--wide"><span>Password</span><input id="accountPassword" type="password" minlength="10" maxlength="128" autocomplete="current-password"></label>
+          <details class="sync-service"><summary>Sync service</summary><select id="accountApiBase"><option value="https://labs.wiplash.ai/labeloo/api/v1">Wiplash Cloud</option><option value="http://127.0.0.1:8790/api/v1">Local development</option></select></details>
+          <button id="accountSubmit" class="button button--primary" type="button">Sign in</button>
+        </section>
+        <section id="signedInAccount" class="account-content hidden">
+          <div class="account-identity"><span class="account-avatar"><i data-lucide="cloud"></i></span><div><strong id="accountUserName"></strong><small id="accountUserEmail"></small></div></div>
+          <div class="sync-status"><span>Current project</span><strong id="cloudProjectStatus">Ready to sync</strong></div>
+          <div id="conflictActions" class="conflict-actions hidden"><p>This project changed on another device. Choose which copy to keep.</p><button id="useCloudButton" class="button button--quiet" type="button">Use cloud copy</button><button id="keepLocalButton" class="button button--primary" type="button">Keep this copy</button></div>
+          <div class="account-actions"><button id="syncNowButton" class="button button--primary" type="button"><i data-lucide="refresh-cw"></i>Sync now</button><button id="logoutButton" class="button button--quiet" type="button">Sign out</button></div>
+        </section>
+        <p id="accountMessage" class="dialog-message" role="status"></p>
+      </div>
+    </dialog>
+
+    <div id="printPortal" class="print-portal" aria-hidden="true"></div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script type="module" src="app.js"></script>
