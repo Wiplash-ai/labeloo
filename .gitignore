@@ -4,3 +4,5 @@ artifacts/
 .DS_Store
 *.log
 labeloo-*.png
+!site/labeloo/assets/labeloo-name-editing.png
+!site/labeloo/assets/labeloo-email-editing.png
