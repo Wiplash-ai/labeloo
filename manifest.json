@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Labeloo",
-  "version": "0.2.0",
-  "description": "Turn selected addresses and imported lists into print-ready address label sheets.",
+  "version": "0.3.0",
+  "description": "Turn selected text and imported lists into print-ready labels across common US Letter stocks.",
   "permissions": ["storage", "contextMenus"],
   "optional_host_permissions": ["https://labs.wiplash.ai/*", "http://127.0.0.1/*", "http://localhost/*"],
   "background": {

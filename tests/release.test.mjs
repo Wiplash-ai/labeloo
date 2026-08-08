@@ -32,7 +32,7 @@ test("print output stays in the current document and preserves Letter geometry",
   const css = await readFile(new URL("src/app.css", root), "utf8");
   const source = await readFile(new URL("src/app.js", root), "utf8");
   assert.match(css, /@page\s*{[^}]*size:\s*letter/i);
-  assert.match(source, /TEMPLATE\.labelWidthIn/);
+  assert.match(source, /selectedTemplate\.labelWidthIn/);
   assert.match(source, /window\.print\(\)/);
   assert.doesNotMatch(source, /window\.open\("", "_blank"\)/);
 });

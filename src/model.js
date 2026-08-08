@@ -1,21 +1,38 @@
 export const STORAGE_KEY = "labelooWorkspaceV2";
 
-export const TEMPLATE = Object.freeze({
-  id: "avery-5160-30",
-  name: "Avery 5160 address labels",
-  compatibility: "Avery 5160 / 8160 / 5260 compatible",
+const template = (config) => Object.freeze({
   pageWidthIn: 8.5,
   pageHeightIn: 11,
-  columns: 3,
-  rows: 10,
-  labelWidthIn: 2.625,
-  labelHeightIn: 1,
-  leftMarginIn: 0.1875,
-  topMarginIn: 0.5,
-  horizontalPitchIn: 2.75,
-  verticalPitchIn: 1,
-  labelsPerSheet: 30
+  ...config,
+  labelsPerSheet: config.columns * config.rows
 });
+
+export const TEMPLATES = Object.freeze([
+  template({ id: "avery-5160-30", name: "Avery 5160", compatibility: "5160 / 8160 / 5260", columns: 3, rows: 10, labelWidthIn: 2.625, labelHeightIn: 1, leftMarginIn: 0.1875, topMarginIn: 0.5, horizontalPitchIn: 2.75, verticalPitchIn: 1 }),
+  template({ id: "avery-5161-20", name: "Avery 5161", compatibility: "5161 / 8161 / 5261", columns: 2, rows: 10, labelWidthIn: 4, labelHeightIn: 1, leftMarginIn: 1 / 6, topMarginIn: 0.5, horizontalPitchIn: 4.188205, verticalPitchIn: 1 }),
+  template({ id: "avery-5162-14", name: "Avery 5162", compatibility: "5162 / 8162 / 5262", columns: 2, rows: 7, labelWidthIn: 4, labelHeightIn: 4 / 3, leftMarginIn: 0.155545, topMarginIn: 0.832628, horizontalPitchIn: 4.1875, verticalPitchIn: 4 / 3 }),
+  template({ id: "avery-5163-10", name: "Avery 5163", compatibility: "5163 / 8163 / 5263", columns: 2, rows: 5, labelWidthIn: 4, labelHeightIn: 2, leftMarginIn: 0.155545, topMarginIn: 0.5, horizontalPitchIn: 4.188205, verticalPitchIn: 2 }),
+  template({ id: "avery-5164-6", name: "Avery 5164", compatibility: "5164 / 8164", columns: 2, rows: 3, labelWidthIn: 4, labelHeightIn: 10 / 3, leftMarginIn: 0.155545, topMarginIn: 0.5, horizontalPitchIn: 4.188205, verticalPitchIn: 3.332628 }),
+  template({ id: "avery-5167-80", name: "Avery 5167", compatibility: "5167 / 8167", columns: 4, rows: 20, labelWidthIn: 1.75, labelHeightIn: 0.5, leftMarginIn: 0.300022, topMarginIn: 0.5, horizontalPitchIn: 2.049968, verticalPitchIn: 0.5 }),
+  template({ id: "avery-5195-60", name: "Avery 5195", compatibility: "5195 / 8195", columns: 4, rows: 15, labelWidthIn: 1.75, labelHeightIn: 0.66, leftMarginIn: 0.300022, topMarginIn: 0.550022, horizontalPitchIn: 2.049968, verticalPitchIn: 0.659722 }),
+  template({ id: "avery-5168-4", name: "Avery 5168", compatibility: "5168 / 8168", columns: 2, rows: 2, labelWidthIn: 3.5, labelHeightIn: 5, leftMarginIn: 0.5, topMarginIn: 0.5, horizontalPitchIn: 4, verticalPitchIn: 5 }),
+  template({ id: "avery-5126-2", name: "Avery 5126", compatibility: "5126 / 8126", columns: 1, rows: 2, labelWidthIn: 8.5, labelHeightIn: 5.5, leftMarginIn: 0, topMarginIn: 0, horizontalPitchIn: 8.5, verticalPitchIn: 5.5 }),
+  template({ id: "avery-5165-1", name: "Avery 5165", compatibility: "5165 / 8165", columns: 1, rows: 1, labelWidthIn: 8.5, labelHeightIn: 11, leftMarginIn: 0, topMarginIn: 0, horizontalPitchIn: 8.5, verticalPitchIn: 11 }),
+  template({ id: "avery-5395-8", name: "Avery 5395", compatibility: "5395 / 8395 name badges", columns: 2, rows: 4, labelWidthIn: 3.375, labelHeightIn: 2.333008, leftMarginIn: 0.6875, topMarginIn: 0.5625, horizontalPitchIn: 3.75, verticalPitchIn: 2.520128 }),
+  template({ id: "avery-5390-8", name: "Avery 5390", compatibility: "5390 / 8390 name badges", columns: 2, rows: 4, labelWidthIn: 3.5, labelHeightIn: 2.21875, leftMarginIn: 0.75, topMarginIn: 1.0625, horizontalPitchIn: 3.5, verticalPitchIn: 2.21875 }),
+  template({ id: "avery-5392-6", name: "Avery 5392", compatibility: "5392 / 8392 name badges", columns: 2, rows: 3, labelWidthIn: 4, labelHeightIn: 3, leftMarginIn: 0.25, topMarginIn: 1, horizontalPitchIn: 4, verticalPitchIn: 3 })
+]);
+
+const TEMPLATE_BY_ID = new Map(TEMPLATES.map((item) => [item.id, item]));
+TEMPLATE_BY_ID.set("address-30", TEMPLATES[0]);
+TEMPLATE_BY_ID.set("avery-8160-30", TEMPLATES[0]);
+TEMPLATE_BY_ID.set("avery-5260-30", TEMPLATES[0]);
+
+export const TEMPLATE = TEMPLATES[0];
+
+export function getTemplate(templateId) {
+  return TEMPLATE_BY_ID.get(templateId) || TEMPLATE;
+}
 
 export const LABEL_TYPES = Object.freeze({
   address: { label: "Address", description: "Recipient and postal address" },
@@ -57,11 +74,11 @@ export function blankSheet(overrides = {}) {
     id: overrides.id || uid("sheet"),
     name: text(overrides.name || `${LABEL_TYPES[type].label} sheet`, 60),
     defaultType: type,
-    templateId: TEMPLATE.id,
     startSlot: 1,
     activePage: 0,
     labels: [],
-    ...overrides
+    ...overrides,
+    templateId: getTemplate(overrides.templateId).id
   };
 }
 
@@ -112,12 +129,13 @@ export function sanitizeSheet(raw = {}, index = 0) {
   const startSlot = Number(raw.startSlot);
   const activePage = Number(raw.activePage ?? raw.activeSheet);
   const defaultType = LABEL_TYPES[raw.defaultType] ? raw.defaultType : labels[0]?.type || "address";
+  const selectedTemplate = getTemplate(raw.templateId);
   return blankSheet({
     id: typeof raw.id === "string" && raw.id ? raw.id : uid("sheet"),
     name: text(raw.name || `Sheet ${index + 1}`, 60),
     defaultType,
-    templateId: TEMPLATE.id,
-    startSlot: Number.isInteger(startSlot) ? Math.min(30, Math.max(1, startSlot)) : 1,
+    templateId: selectedTemplate.id,
+    startSlot: Number.isInteger(startSlot) ? Math.min(selectedTemplate.labelsPerSheet, Math.max(1, startSlot)) : 1,
     activePage: Number.isInteger(activePage) ? Math.max(0, activePage) : 0,
     labels
   });
@@ -192,12 +210,14 @@ export function validateLabel(label) {
 }
 
 export function sheetCount(sheet) {
-  return Math.max(1, Math.ceil(((sheet.startSlot - 1) + sheet.labels.length) / TEMPLATE.labelsPerSheet));
+  const selectedTemplate = getTemplate(sheet.templateId);
+  return Math.max(1, Math.ceil(((sheet.startSlot - 1) + sheet.labels.length) / selectedTemplate.labelsPerSheet));
 }
 
-export function labelPosition(index, startSlot) {
+export function labelPosition(index, startSlot, templateId = TEMPLATE.id) {
+  const selectedTemplate = getTemplate(templateId);
   const globalSlot = (startSlot - 1) + index;
-  return { sheet: Math.floor(globalSlot / TEMPLATE.labelsPerSheet), slot: globalSlot % TEMPLATE.labelsPerSheet };
+  return { sheet: Math.floor(globalSlot / selectedTemplate.labelsPerSheet), slot: globalSlot % selectedTemplate.labelsPerSheet };
 }
 
 export function parseAddressBlock(value) {

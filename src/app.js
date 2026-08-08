@@ -26,12 +26,13 @@ import {
 import { labelsToCsv, parseCsv } from "./csv.js";
 import {
   LABEL_TYPES,
-  TEMPLATE,
+  TEMPLATES,
   activeSheet,
   blankLabel,
   blankSheet,
   labelLines,
   labelPosition,
+  getTemplate,
   parseAddressBlocks,
   parseQuickLabel,
   sanitizeWorkspace,
@@ -151,6 +152,7 @@ let sheetDialogMode = "create";
 
 const currentSheet = () => activeSheet(state);
 const currentLabels = () => currentSheet().labels;
+const currentTemplate = () => getTemplate(currentSheet().templateId);
 
 if (!state.selectedId && currentLabels()[0]) state.selectedId = currentLabels()[0].id;
 
@@ -160,7 +162,7 @@ if (pendingSelection) {
   if (captured) {
     currentLabels().push(captured);
     state.selectedId = captured.id;
-    const position = labelPosition(currentLabels().length - 1, currentSheet().startSlot);
+    const position = labelPosition(currentLabels().length - 1, currentSheet().startSlot, currentSheet().templateId);
     currentSheet().activePage = position.sheet;
     queueMicrotask(() => showToast(`${LABEL_TYPES[captured.type].label} added`));
   }
@@ -232,16 +234,25 @@ async function syncToCloud(force = false) {
 function printLabels() {
   elements.printPortal.replaceChildren();
   const sheetSet = currentSheet();
+  const selectedTemplate = getTemplate(sheetSet.templateId);
   const count = sheetCount(sheetSet);
   for (let sheet = 0; sheet < count; sheet += 1) {
     const page = document.createElement("section");
     page.className = "print-sheet";
-    for (let slot = 0; slot < TEMPLATE.labelsPerSheet; slot += 1) {
-      const globalSlot = sheet * TEMPLATE.labelsPerSheet + slot;
+    page.style.width = `${selectedTemplate.pageWidthIn}in`;
+    page.style.height = `${selectedTemplate.pageHeightIn}in`;
+    for (let slot = 0; slot < selectedTemplate.labelsPerSheet; slot += 1) {
+      const globalSlot = sheet * selectedTemplate.labelsPerSheet + slot;
       const index = globalSlot - (sheetSet.startSlot - 1);
       const label = index >= 0 ? sheetSet.labels[index] : null;
       const cell = document.createElement("div");
       cell.className = `print-label${label ? ` align-${label.align}` : ""}`;
+      const row = Math.floor(slot / selectedTemplate.columns);
+      const column = slot % selectedTemplate.columns;
+      cell.style.left = `${selectedTemplate.leftMarginIn + (column * selectedTemplate.horizontalPitchIn)}in`;
+      cell.style.top = `${selectedTemplate.topMarginIn + (row * selectedTemplate.verticalPitchIn)}in`;
+      cell.style.width = `${selectedTemplate.labelWidthIn}in`;
+      cell.style.height = `${selectedTemplate.labelHeightIn}in`;
       if (label) {
         cell.style.fontSize = `${label.fontSize}pt`;
         cell.style.lineHeight = String(label.lineHeight);
@@ -259,7 +270,7 @@ function selectLabel(id, moveToSheet = true) {
   state.selectedId = id;
   if (moveToSheet) {
     const index = selectedIndex();
-    if (index >= 0) currentSheet().activePage = labelPosition(index, currentSheet().startSlot).sheet;
+    if (index >= 0) currentSheet().activePage = labelPosition(index, currentSheet().startSlot, currentSheet().templateId).sheet;
   }
   render();
   scheduleSave();
@@ -335,22 +346,24 @@ function renderList() {
 
 function slotForSheet(slot) {
   const sheet = currentSheet();
-  const globalSlot = sheet.activePage * TEMPLATE.labelsPerSheet + slot;
+  const selectedTemplate = getTemplate(sheet.templateId);
+  const globalSlot = sheet.activePage * selectedTemplate.labelsPerSheet + slot;
   const recordIndex = globalSlot - (sheet.startSlot - 1);
   return recordIndex >= 0 ? { label: sheet.labels[recordIndex], recordIndex } : { label: null, recordIndex };
 }
 
 function createSheetSlot(slot) {
-  const row = Math.floor(slot / TEMPLATE.columns);
-  const column = slot % TEMPLATE.columns;
+  const selectedTemplate = currentTemplate();
+  const row = Math.floor(slot / selectedTemplate.columns);
+  const column = slot % selectedTemplate.columns;
   const { label, recordIndex } = slotForSheet(slot);
   const cell = document.createElement("button");
   cell.type = "button";
   cell.className = "sheet-label";
-  cell.style.left = `${TEMPLATE.leftMarginIn + (column * TEMPLATE.horizontalPitchIn)}in`;
-  cell.style.top = `${TEMPLATE.topMarginIn + (row * TEMPLATE.verticalPitchIn)}in`;
-  cell.style.width = `${TEMPLATE.labelWidthIn}in`;
-  cell.style.height = `${TEMPLATE.labelHeightIn}in`;
+  cell.style.left = `${selectedTemplate.leftMarginIn + (column * selectedTemplate.horizontalPitchIn)}in`;
+  cell.style.top = `${selectedTemplate.topMarginIn + (row * selectedTemplate.verticalPitchIn)}in`;
+  cell.style.width = `${selectedTemplate.labelWidthIn}in`;
+  cell.style.height = `${selectedTemplate.labelHeightIn}in`;
   cell.setAttribute("aria-label", label ? `Edit ${label.name || `label ${recordIndex + 1}`}` : `Empty slot ${slot + 1}`);
 
   const slotNumber = document.createElement("span");
@@ -387,11 +400,12 @@ function createSheetSlot(slot) {
 
 function renderSheet() {
   const sheet = currentSheet();
+  const selectedTemplate = getTemplate(sheet.templateId);
   const totalSheets = sheetCount(sheet);
   sheet.activePage = Math.min(Math.max(0, sheet.activePage), totalSheets - 1);
-  elements.sheetCanvas.replaceChildren(...Array.from({ length: TEMPLATE.labelsPerSheet }, (_, slot) => createSheetSlot(slot)));
-  elements.sheetCanvas.style.width = `${TEMPLATE.pageWidthIn}in`;
-  elements.sheetCanvas.style.height = `${TEMPLATE.pageHeightIn}in`;
+  elements.sheetCanvas.replaceChildren(...Array.from({ length: selectedTemplate.labelsPerSheet }, (_, slot) => createSheetSlot(slot)));
+  elements.sheetCanvas.style.width = `${selectedTemplate.pageWidthIn}in`;
+  elements.sheetCanvas.style.height = `${selectedTemplate.pageHeightIn}in`;
   elements.sheetCanvas.style.transform = `scale(${state.zoom / 100})`;
   elements.sheetStage.style.setProperty("--sheet-scale", String(state.zoom / 100));
   elements.sheetPosition.textContent = `Page ${sheet.activePage + 1} of ${totalSheets}`;
@@ -426,7 +440,7 @@ function fillEditor(label) {
     button.classList.toggle("selected", button.dataset.align === label.align);
   });
   const index = selectedIndex();
-  const position = labelPosition(index, currentSheet().startSlot);
+  const position = labelPosition(index, currentSheet().startSlot, currentSheet().templateId);
   elements.selectedPosition.textContent = `Label ${index + 1} · Page ${position.sheet + 1}, position ${position.slot + 1}`;
 }
 
@@ -444,6 +458,15 @@ function renderMeta() {
   elements.labelCount.textContent = `${sheet.labels.length} label${sheet.labels.length === 1 ? "" : "s"}`;
   elements.sheetCount.textContent = `${totalSheets} page${totalSheets === 1 ? "" : "s"}`;
   elements.startSlotInput.value = sheet.startSlot;
+  const selectedTemplate = getTemplate(sheet.templateId);
+  elements.templateSelect.replaceChildren(...TEMPLATES.map((item) => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = `${item.name} · ${item.labelsPerSheet} label${item.labelsPerSheet === 1 ? "" : "s"} · Letter`;
+    option.selected = item.id === selectedTemplate.id;
+    return option;
+  }));
+  elements.startSlotInput.max = String(selectedTemplate.labelsPerSheet);
   elements.zoomInput.value = state.zoom;
   elements.sheetSelect.replaceChildren(...state.sheets.map((item) => {
     const option = document.createElement("option");
@@ -466,7 +489,7 @@ function addLabel(label = null) {
   const nextLabel = label || blankLabel({ type: sheet.defaultType });
   sheet.labels.push(nextLabel);
   state.selectedId = nextLabel.id;
-  sheet.activePage = labelPosition(sheet.labels.length - 1, sheet.startSlot).sheet;
+  sheet.activePage = labelPosition(sheet.labels.length - 1, sheet.startSlot, sheet.templateId).sheet;
   render();
   scheduleSave();
 }
@@ -476,7 +499,7 @@ function moveLabel(from, to) {
   if (to < 0 || to >= sheet.labels.length || from === to) return;
   const [label] = sheet.labels.splice(from, 1);
   sheet.labels.splice(to, 0, label);
-  sheet.activePage = labelPosition(to, sheet.startSlot).sheet;
+  sheet.activePage = labelPosition(to, sheet.startSlot, sheet.templateId).sheet;
   render();
   scheduleSave();
 }
@@ -499,7 +522,7 @@ function duplicateSelected() {
   const duplicate = blankLabel({ ...current, id: undefined });
   currentLabels().splice(index + 1, 0, duplicate);
   state.selectedId = duplicate.id;
-  currentSheet().activePage = labelPosition(index + 1, currentSheet().startSlot).sheet;
+  currentSheet().activePage = labelPosition(index + 1, currentSheet().startSlot, currentSheet().templateId).sheet;
   render();
   scheduleSave();
   showToast("Label duplicated");
@@ -541,7 +564,7 @@ async function importLabels() {
     if (!labels.length) throw new Error("Add at least one complete address.");
     currentLabels().push(...labels);
     state.selectedId = labels[0].id;
-    currentSheet().activePage = labelPosition(currentLabels().length - labels.length, currentSheet().startSlot).sheet;
+    currentSheet().activePage = labelPosition(currentLabels().length - labels.length, currentSheet().startSlot, currentSheet().templateId).sheet;
     elements.importDialog.close();
     elements.pasteInput.value = "";
     elements.csvInput.value = "";
@@ -697,10 +720,19 @@ elements.projectName.addEventListener("input", () => {
   scheduleSave();
 });
 elements.startSlotInput.addEventListener("change", () => {
-  currentSheet().startSlot = Math.min(30, Math.max(1, Number(elements.startSlotInput.value) || 1));
+  currentSheet().startSlot = Math.min(currentTemplate().labelsPerSheet, Math.max(1, Number(elements.startSlotInput.value) || 1));
   currentSheet().activePage = 0;
   render();
   scheduleSave();
+});
+elements.templateSelect.addEventListener("change", () => {
+  const selectedTemplate = getTemplate(elements.templateSelect.value);
+  currentSheet().templateId = selectedTemplate.id;
+  currentSheet().startSlot = Math.min(currentSheet().startSlot, selectedTemplate.labelsPerSheet);
+  currentSheet().activePage = 0;
+  render();
+  scheduleSave();
+  showToast(`${selectedTemplate.name} selected`);
 });
 elements.zoomInput.addEventListener("input", () => {
   state.zoom = Number(elements.zoomInput.value);

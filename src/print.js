@@ -1,8 +1,9 @@
-import { TEMPLATE, activeSheet, labelLines, labelPosition, sheetCount } from "./model.js";
+import { activeSheet, getTemplate, labelLines, labelPosition, sheetCount } from "./model.js";
 import { loadWorkspace } from "./storage.js";
 
 const state = await loadWorkspace();
 const sheet = activeSheet(state);
+const template = getTemplate(sheet.templateId);
 const sheets = document.getElementById("printSheets");
 document.getElementById("printProjectName").textContent = state.projectName || "Labeloo";
 
@@ -10,16 +11,16 @@ for (let sheetIndex = 0; sheetIndex < sheetCount(sheet); sheetIndex += 1) {
   const page = document.createElement("section");
   page.className = "print-sheet";
   sheet.labels.forEach((label, index) => {
-    const position = labelPosition(index, sheet.startSlot);
+    const position = labelPosition(index, sheet.startSlot, sheet.templateId);
     if (position.sheet !== sheetIndex) return;
-    const row = Math.floor(position.slot / TEMPLATE.columns);
-    const column = position.slot % TEMPLATE.columns;
+    const row = Math.floor(position.slot / template.columns);
+    const column = position.slot % template.columns;
     const cell = document.createElement("div");
     cell.className = `print-label align-${label.align}`;
-    cell.style.left = `${TEMPLATE.leftMarginIn + (column * TEMPLATE.horizontalPitchIn)}in`;
-    cell.style.top = `${TEMPLATE.topMarginIn + (row * TEMPLATE.verticalPitchIn)}in`;
-    cell.style.width = `${TEMPLATE.labelWidthIn}in`;
-    cell.style.height = `${TEMPLATE.labelHeightIn}in`;
+    cell.style.left = `${template.leftMarginIn + (column * template.horizontalPitchIn)}in`;
+    cell.style.top = `${template.topMarginIn + (row * template.verticalPitchIn)}in`;
+    cell.style.width = `${template.labelWidthIn}in`;
+    cell.style.height = `${template.labelHeightIn}in`;
     cell.style.fontSize = `${label.fontSize}pt`;
     cell.style.lineHeight = String(label.lineHeight);
     labelLines(label).forEach((line) => {

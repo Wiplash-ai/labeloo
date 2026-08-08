@@ -276,9 +276,9 @@ svg {
   html, body { width: auto; height: auto; overflow: visible; background: white; }
   .app-shell, dialog, .toast { display: none !important; }
   .print-portal { display: block !important; }
-  .print-sheet { width: 8.5in; height: 11in; padding: .5in .1875in; display: grid; grid-template-columns: repeat(3, 2.625in); grid-template-rows: repeat(10, 1in); column-gap: .125in; break-after: page; }
+  .print-sheet { position: relative; width: 8.5in; height: 11in; overflow: hidden; break-after: page; }
   .print-sheet:last-child { break-after: auto; }
-  .print-label { width: 2.625in; height: 1in; padding: .08in .13in; display: flex; flex-direction: column; justify-content: center; overflow: hidden; font-family: Arial, sans-serif; color: #000; }
+  .print-label { position: absolute; padding: .08in .13in; display: flex; flex-direction: column; justify-content: center; overflow: hidden; font-family: Arial, sans-serif; color: #000; }
   .print-label.align-center { align-items: center; text-align: center; }
   .print-label span { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }

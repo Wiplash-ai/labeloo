@@ -2,11 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   TEMPLATE,
+  TEMPLATES,
   activeSheet,
   blankLabel,
   blankSheet,
   labelLines,
   labelPosition,
+  getTemplate,
   parseAddressBlock,
   parseAddressBlocks,
   sanitizeWorkspace,
@@ -27,6 +29,33 @@ test("30-up geometry and start position map labels to physical slots", () => {
   assert.equal(sheetCount({ startSlot: 8, labels: Array.from({ length: 24 }) }), 2);
   assert.equal(TEMPLATE.leftMarginIn + (2 * TEMPLATE.horizontalPitchIn) + TEMPLATE.labelWidthIn, 8.3125);
   assert.equal(TEMPLATE.topMarginIn + (9 * TEMPLATE.verticalPitchIn) + TEMPLATE.labelHeightIn, 10.5);
+});
+
+test("all supported stock templates fit within US Letter and paginate independently", () => {
+  assert.equal(TEMPLATES.length, 13);
+  for (const template of TEMPLATES) {
+    const right = template.leftMarginIn + ((template.columns - 1) * template.horizontalPitchIn) + template.labelWidthIn;
+    const bottom = template.topMarginIn + ((template.rows - 1) * template.verticalPitchIn) + template.labelHeightIn;
+    assert.ok(right <= template.pageWidthIn + 0.001, `${template.id} exceeds page width`);
+    assert.ok(bottom <= template.pageHeightIn + 0.001, `${template.id} exceeds page height`);
+    assert.equal(template.labelsPerSheet, template.columns * template.rows);
+    assert.deepEqual(
+      labelPosition(template.labelsPerSheet, 1, template.id),
+      { sheet: 1, slot: 0 }
+    );
+  }
+});
+
+test("sheet stock survives workspace sanitization and bounds its start slot", () => {
+  const template = getTemplate("avery-5167-80");
+  const clean = sanitizeWorkspace({
+    projectName: "Return labels",
+    sheets: [{ id: "returns", name: "Returns", templateId: template.id, startSlot: 80, labels: [] }],
+    activeSheetId: "returns"
+  });
+  assert.equal(activeSheet(clean).templateId, template.id);
+  assert.equal(activeSheet(clean).startSlot, 80);
+  assert.equal(sheetCount({ ...activeSheet(clean), labels: [{}, {}] }), 2);
 });
 
 test("address blocks parse common US address formatting", () => {

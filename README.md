@@ -6,13 +6,16 @@
 
 Labeloo is a local-first label sheet workbench and browser extension. Capture
 text from a webpage or create address, name-tag, email, and custom labels, then
-print them on common 30-up US Letter label stock.
+print them on common rectangular US Letter label stock.
 
 ## Features
 
 - Browser context-menu capture for selected addresses.
 - Quick-add extension popup with label-type selection.
-- Exact 30-up sheet preview compatible with Avery 5160, 8160, and 5260.
+- Exact previews for 13 common rectangular address, shipping, return-address,
+  full-sheet, half-sheet, and name-badge stock families.
+- Compatible layouts for Avery 5126, 5160, 5161, 5162, 5163, 5164, 5165,
+  5167, 5168, 5195, 5390, 5392, and 5395 plus listed equivalents.
 - Multiple named sheets in one local workspace.
 - Type-aware completeness checks for names, email syntax, and US address fields.
 - Reuse partially consumed sheets by selecting the first available position.

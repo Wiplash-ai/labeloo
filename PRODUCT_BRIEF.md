@@ -10,9 +10,10 @@ any ordinary webpage directly into the current Labeloo sheet.
 ## V1 Scope
 
 - Local-first browser application and Manifest V3 extension.
-- 30-up US Letter address sheets compatible with Avery 5160, 8160, and 5260.
+- Thirteen rectangular US Letter stock families spanning address, shipping,
+  return-address, full-sheet, half-sheet, and name-badge layouts.
 - Add, edit, duplicate, reorder, and remove labels.
-- Start printing at any of the 30 sheet positions so partially used sheets can
+- Start printing at any position supported by the selected stock so partially used sheets can
   be reused.
 - Import pasted address blocks and CSV files.
 - Capture selected webpage text from the browser context menu.
