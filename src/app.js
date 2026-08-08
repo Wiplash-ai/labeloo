@@ -30,6 +30,7 @@ import {
   activeSheet,
   blankLabel,
   blankSheet,
+  labelHasContent,
   labelLines,
   labelPosition,
   getTemplate,
@@ -101,6 +102,7 @@ const elements = Object.fromEntries([
   "zoomInput",
   "sheetStage",
   "sheetCanvas",
+  "labelInspector",
   "emptyInspector",
   "editorInspector",
   "selectedPosition",
@@ -137,7 +139,8 @@ const elements = Object.fromEntries([
   "accountSubmit", "accountUserName", "accountUserEmail", "cloudProjectStatus",
   "conflictActions", "useCloudButton", "keepLocalButton", "syncNowButton", "logoutButton",
   "accountMessage", "printPortal", "sheetDialog", "sheetDialogTitle", "sheetNameInput",
-  "sheetTypeInput", "deleteSheetButton", "saveSheetButton"
+  "sheetTypeInput", "deleteSheetButton", "saveSheetButton", "replaceLabelDialog",
+  "replaceLabelMessage", "closeReplaceLabelButton", "cancelReplaceLabelButton", "confirmReplaceLabelButton"
 ].map((id) => [id, document.getElementById(id)]));
 
 let state = await loadWorkspace();
@@ -149,6 +152,8 @@ let cloudTimer = null;
 let account = await loadAccount();
 let accountMode = "login";
 let sheetDialogMode = "create";
+let pendingLabelCopy = null;
+let draggedLabelId = null;
 
 const currentSheet = () => activeSheet(state);
 const currentLabels = () => currentSheet().labels;
@@ -266,7 +271,7 @@ function printLabels() {
   requestAnimationFrame(() => window.print());
 }
 
-function selectLabel(id, moveToSheet = true) {
+function selectLabel(id, moveToSheet = true, focusEditor = false) {
   state.selectedId = id;
   if (moveToSheet) {
     const index = selectedIndex();
@@ -274,6 +279,53 @@ function selectLabel(id, moveToSheet = true) {
   }
   render();
   scheduleSave();
+  if (focusEditor) {
+    queueMicrotask(() => {
+      const label = selectedLabel();
+      const input = label?.type === "custom"
+        ? elements.customTextInput
+        : label?.type === "email"
+          ? elements.emailInput
+          : elements.nameInput;
+      input?.focus({ preventScroll: true });
+    });
+  }
+}
+
+function clearDragState() {
+  elements.sheetCanvas.querySelectorAll(".drag-source, .drag-target, .drag-target--replace").forEach((cell) => {
+    cell.classList.remove("drag-source", "drag-target", "drag-target--replace");
+  });
+}
+
+function copyLabelToRecord(sourceId, targetRecordIndex) {
+  const sheet = currentSheet();
+  const source = sheet.labels.find((label) => label.id === sourceId);
+  if (!source || targetRecordIndex < 0) return;
+  const existing = sheet.labels[targetRecordIndex] || null;
+  const copy = blankLabel({ ...source, id: existing?.id });
+  while (sheet.labels.length < targetRecordIndex) sheet.labels.push(blankLabel({ type: sheet.defaultType }));
+  if (existing) sheet.labels[targetRecordIndex] = copy;
+  else sheet.labels.push(copy);
+  state.selectedId = copy.id;
+  render();
+  scheduleSave();
+  showToast(existing ? "Label replaced" : "Label copied");
+}
+
+function requestLabelCopy(sourceId, targetRecordIndex, targetSlot) {
+  const sheet = currentSheet();
+  const source = sheet.labels.find((label) => label.id === sourceId);
+  const target = sheet.labels[targetRecordIndex] || null;
+  if (!source || targetRecordIndex < 0 || target?.id === source.id) return;
+  if (!target || !labelHasContent(target)) {
+    copyLabelToRecord(sourceId, targetRecordIndex);
+    return;
+  }
+  pendingLabelCopy = { sourceId, targetRecordIndex };
+  elements.replaceLabelMessage.textContent = `Position ${targetSlot + 1} already contains ${target.name || "label content"}. Replace it with ${source.name || "the dragged label"}?`;
+  elements.replaceLabelDialog.showModal();
+  queueMicrotask(() => elements.confirmReplaceLabelButton.focus());
 }
 
 function createListItem(label, index) {
@@ -365,6 +417,8 @@ function createSheetSlot(slot) {
   cell.style.width = `${selectedTemplate.labelWidthIn}in`;
   cell.style.height = `${selectedTemplate.labelHeightIn}in`;
   cell.setAttribute("aria-label", label ? `Edit ${label.name || `label ${recordIndex + 1}`}` : `Empty slot ${slot + 1}`);
+  cell.dataset.slot = String(slot);
+  cell.dataset.recordIndex = String(recordIndex);
 
   const slotNumber = document.createElement("span");
   slotNumber.className = "slot-number";
@@ -373,27 +427,58 @@ function createSheetSlot(slot) {
 
   if (!label) {
     cell.classList.add("empty");
-    cell.disabled = true;
-    return cell;
+    cell.tabIndex = -1;
+  } else {
+    cell.draggable = true;
+    if (label.id === state.selectedId) cell.classList.add("selected");
+    const content = document.createElement("span");
+    content.className = `sheet-label-content align-${label.align}`;
+    content.style.fontSize = `${label.fontSize}pt`;
+    content.style.lineHeight = String(label.lineHeight);
+    labelLines(label).forEach((line) => {
+      const lineNode = document.createElement("span");
+      lineNode.textContent = line;
+      content.append(lineNode);
+    });
+    cell.append(content);
+    cell.addEventListener("click", () => selectLabel(label.id, false, true));
+    cell.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      selectLabel(label.id, false, true);
+    });
+    cell.addEventListener("dragstart", (event) => {
+      draggedLabelId = label.id;
+      event.dataTransfer.effectAllowed = "copy";
+      event.dataTransfer.setData("application/x-labeloo-label", label.id);
+      event.dataTransfer.setData("text/plain", label.id);
+      cell.classList.add("drag-source");
+    });
+    cell.addEventListener("dragend", () => {
+      draggedLabelId = null;
+      clearDragState();
+    });
   }
 
-  if (label.id === state.selectedId) cell.classList.add("selected");
-  const content = document.createElement("span");
-  content.className = `sheet-label-content align-${label.align}`;
-  content.style.fontSize = `${label.fontSize}pt`;
-  content.style.lineHeight = String(label.lineHeight);
-  labelLines(label).forEach((line) => {
-    const lineNode = document.createElement("span");
-    lineNode.textContent = line;
-    content.append(lineNode);
-  });
-  cell.append(content);
-  cell.addEventListener("click", () => selectLabel(label.id, false));
-  cell.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter") return;
+  cell.addEventListener("dragover", (event) => {
+    const sourceId = draggedLabelId
+      || event.dataTransfer.getData("application/x-labeloo-label")
+      || event.dataTransfer.getData("text/plain");
+    if (!sourceId || label?.id === sourceId || recordIndex < 0) return;
     event.preventDefault();
-    selectLabel(label.id, false);
-    queueMicrotask(() => elements.nameInput.focus());
+    event.dataTransfer.dropEffect = "copy";
+    cell.classList.add("drag-target");
+    cell.classList.toggle("drag-target--replace", Boolean(label && labelHasContent(label)));
+  });
+  cell.addEventListener("dragleave", () => cell.classList.remove("drag-target", "drag-target--replace"));
+  cell.addEventListener("drop", (event) => {
+    event.preventDefault();
+    const sourceId = draggedLabelId
+      || event.dataTransfer.getData("application/x-labeloo-label")
+      || event.dataTransfer.getData("text/plain");
+    draggedLabelId = null;
+    clearDragState();
+    requestLabelCopy(sourceId, recordIndex, slot);
   });
   return cell;
 }
@@ -715,6 +800,14 @@ elements.addSheetButton.addEventListener("click", () => openSheetDialog("create"
 elements.sheetMenuButton.addEventListener("click", () => openSheetDialog("edit"));
 elements.saveSheetButton.addEventListener("click", saveSheetSettings);
 elements.deleteSheetButton.addEventListener("click", removeCurrentSheet);
+elements.closeReplaceLabelButton.addEventListener("click", () => elements.replaceLabelDialog.close());
+elements.cancelReplaceLabelButton.addEventListener("click", () => elements.replaceLabelDialog.close());
+elements.confirmReplaceLabelButton.addEventListener("click", () => {
+  if (pendingLabelCopy) copyLabelToRecord(pendingLabelCopy.sourceId, pendingLabelCopy.targetRecordIndex);
+  pendingLabelCopy = null;
+  elements.replaceLabelDialog.close();
+});
+elements.replaceLabelDialog.addEventListener("close", () => { pendingLabelCopy = null; });
 elements.projectName.addEventListener("input", () => {
   state.projectName = elements.projectName.value;
   scheduleSave();
@@ -739,6 +832,16 @@ elements.zoomInput.addEventListener("input", () => {
   renderSheet();
   scheduleSave();
 });
+elements.sheetStage.addEventListener("wheel", (event) => {
+  if (!event.deltaY) return;
+  event.preventDefault();
+  const minimum = Number(elements.zoomInput.min) || 65;
+  const maximum = Number(elements.zoomInput.max) || 115;
+  state.zoom = Math.min(maximum, Math.max(minimum, state.zoom + (event.deltaY < 0 ? 5 : -5)));
+  elements.zoomInput.value = state.zoom;
+  renderSheet();
+  scheduleSave();
+}, { passive: false });
 elements.previousSheetButton.addEventListener("click", () => {
   currentSheet().activePage -= 1;
   renderSheet();

@@ -187,6 +187,10 @@ export function labelLines(label) {
   return [label.name, label.address1, label.address2, cityLine, label.country].filter(Boolean);
 }
 
+export function labelHasContent(label) {
+  return labelLines(label).some((line) => line.trim());
+}
+
 export function validateLabel(label) {
   const errors = {};
   if (label.type === "name") {

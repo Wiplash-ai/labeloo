@@ -20,6 +20,10 @@ print them on common rectangular US Letter label stock.
 - Type-aware completeness checks for names, email syntax, and US address fields.
 - Reuse partially consumed sheets by selecting the first available position.
 - Add, edit, duplicate, reorder, search, and delete labels.
+- Click a physical label to edit it, drag a populated label into an empty slot,
+  and confirm before replacing existing content.
+- Zoom the sheet directly with the mouse wheel while the pointer is over the
+  print preview.
 - Paste address blocks or import CSV files with flexible column names.
 - Browser-local auto-save and CSV export.
 - Optional Labeloo account and revision-safe cross-device project sync.
@@ -69,6 +73,9 @@ Address labels manufactured by Avery are referenced solely for compatibility.
 Labeloo is not affiliated with or endorsed by Avery Products Corporation.
 Address validation checks formatting and completeness only; it does not confirm
 that an address is deliverable.
+
+See [Specialty Label Template Roadmap](docs/SPECIALTY_TEMPLATE_ROADMAP.md) for
+the verified approach to round, oval, square, card, and nonuniform stock.
 
 ## License
 

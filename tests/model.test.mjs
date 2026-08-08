@@ -7,6 +7,7 @@ import {
   blankLabel,
   blankSheet,
   labelLines,
+  labelHasContent,
   labelPosition,
   getTemplate,
   parseAddressBlock,
@@ -111,4 +112,10 @@ test("new and duplicated labels always receive an identifier", () => {
   assert.ok(original.id);
   assert.ok(duplicate.id);
   assert.notEqual(original.id, duplicate.id);
+});
+
+test("label content detection distinguishes editable blank slots from populated labels", () => {
+  assert.equal(labelHasContent(blankLabel({ type: "address" })), false);
+  assert.equal(labelHasContent(blankLabel({ type: "address", name: "Jordan" })), true);
+  assert.equal(labelHasContent(blankLabel({ type: "custom", customText: "FRAGILE" })), true);
 });

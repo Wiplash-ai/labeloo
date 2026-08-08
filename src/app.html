@@ -300,6 +300,20 @@
       </form>
     </dialog>
 
+    <dialog id="replaceLabelDialog" class="sheet-dialog replace-label-dialog">
+      <div class="replace-label-shell">
+        <header>
+          <div><span class="eyebrow">Occupied label</span><h2>Replace this label?</h2></div>
+          <button id="closeReplaceLabelButton" class="icon-button" type="button" title="Cancel" aria-label="Cancel replacement"><i data-lucide="x"></i></button>
+        </header>
+        <p id="replaceLabelMessage">This position already contains label content.</p>
+        <footer>
+          <button id="cancelReplaceLabelButton" class="button button--quiet" type="button">Keep existing</button>
+          <button id="confirmReplaceLabelButton" class="button button--primary" type="button">Replace label</button>
+        </footer>
+      </div>
+    </dialog>
+
     <div id="printPortal" class="print-portal" aria-hidden="true"></div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

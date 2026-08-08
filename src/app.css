@@ -740,8 +740,21 @@ svg {
 }
 
 .sheet-label.empty {
-  cursor: default;
+  cursor: copy;
   opacity: 0.55;
+}
+
+.sheet-label.drag-source { opacity: 0.38; }
+.sheet-label.drag-target {
+  border-color: var(--teal);
+  border-style: solid;
+  background: rgba(8, 127, 120, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(8, 127, 120, 0.24);
+}
+.sheet-label.drag-target--replace {
+  border-color: var(--gold);
+  background: rgba(195, 139, 42, 0.13);
+  box-shadow: inset 0 0 0 2px rgba(195, 139, 42, 0.24);
 }
 
 .slot-number {
@@ -884,6 +897,13 @@ svg {
 .compact-dialog > header h2 { margin: 3px 0 0; font-family: Georgia, serif; font-size: 23px; }
 .compact-dialog > label { padding-inline: 18px; }
 .compact-dialog > footer { padding: 14px 18px; display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; border-top: 1px solid var(--line); }
+.sheet-dialog > .compact-dialog { min-height: 0; grid-template-rows: auto auto auto; }
+.replace-label-dialog { width: min(420px, calc(100vw - 28px)); }
+.replace-label-shell { display: grid; }
+.replace-label-shell > header { padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--line); }
+.replace-label-shell > header h2 { margin: 3px 0 0; font-family: Georgia, serif; font-size: 22px; }
+.replace-label-shell > p { margin: 0; padding: 20px 18px; color: #5f6b67; font-size: 12px; line-height: 1.55; }
+.replace-label-shell > footer { padding: 14px 18px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); }
 
 .brand-footer { min-width: 0; padding: 0 18px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; color: #7e8a86; border-top: 1px solid #3d4a47; background: var(--ink); font-size: 9px; }
 .brand-footer span:nth-child(2) { text-align: center; }
