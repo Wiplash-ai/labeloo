@@ -740,8 +740,13 @@ svg {
 }
 
 .sheet-label.empty {
-  cursor: copy;
+  cursor: text;
   opacity: 0.55;
+}
+
+.sheet-label.empty:disabled {
+  cursor: default;
+  opacity: 0.3;
 }
 
 .sheet-label.drag-source { opacity: 0.38; }

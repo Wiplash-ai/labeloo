@@ -404,6 +404,15 @@ function slotForSheet(slot) {
   return recordIndex >= 0 ? { label: sheet.labels[recordIndex], recordIndex } : { label: null, recordIndex };
 }
 
+function editEmptySlot(recordIndex) {
+  if (recordIndex < 0) return;
+  const sheet = currentSheet();
+  while (sheet.labels.length <= recordIndex) {
+    sheet.labels.push(blankLabel({ type: sheet.defaultType }));
+  }
+  selectLabel(sheet.labels[recordIndex].id, false, true);
+}
+
 function createSheetSlot(slot) {
   const selectedTemplate = currentTemplate();
   const row = Math.floor(slot / selectedTemplate.columns);
@@ -427,9 +436,16 @@ function createSheetSlot(slot) {
 
   if (!label) {
     cell.classList.add("empty");
-    cell.tabIndex = -1;
+    if (recordIndex < 0) {
+      cell.disabled = true;
+      cell.setAttribute("aria-label", `Skipped slot ${slot + 1}`);
+    } else {
+      cell.addEventListener("click", () => editEmptySlot(recordIndex));
+    }
   } else {
-    cell.draggable = true;
+    const hasContent = labelHasContent(label);
+    cell.classList.toggle("empty", !hasContent);
+    cell.draggable = hasContent;
     if (label.id === state.selectedId) cell.classList.add("selected");
     const content = document.createElement("span");
     content.className = `sheet-label-content align-${label.align}`;
