@@ -105,14 +105,14 @@
                 <span>Start at</span>
                 <input id="startSlotInput" type="number" min="1" max="30" value="1">
               </label>
-              <label>
-                <span>Zoom</span>
-                <input id="zoomInput" type="range" min="65" max="115" value="86">
+              <label class="zoom-field">
+                <span>Zoom <output id="zoomValue" for="zoomInput">86%</output></span>
+                <input id="zoomInput" type="range" min="65" max="115" step="1" value="86">
               </label>
             </div>
           </div>
 
-          <div id="sheetStage" class="sheet-stage">
+          <div id="sheetStage" class="sheet-stage" title="Scroll to zoom" aria-description="Scroll the mouse wheel here to zoom the label sheet">
             <div id="sheetCanvas" class="sheet-canvas" aria-label="Address label sheet preview"></div>
           </div>
           <p class="sheet-note"><i data-lucide="info"></i> Use a test sheet before printing on label stock. Browser print scaling must stay at 100%.</p>

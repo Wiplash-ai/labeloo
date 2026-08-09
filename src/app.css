@@ -656,6 +656,18 @@ svg {
   text-transform: uppercase;
 }
 
+.toolbar-fields .zoom-field > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.toolbar-fields .zoom-field output {
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+}
+
 .toolbar-fields select,
 .toolbar-fields input[type="number"] {
   height: 30px;
@@ -690,6 +702,7 @@ svg {
   justify-content: center;
   padding: 28px 26px 60px;
   scrollbar-width: thin;
+  overscroll-behavior: contain;
 }
 
 .sheet-canvas {

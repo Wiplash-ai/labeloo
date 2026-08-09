@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Labeloo",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Turn selected text and imported lists into print-ready labels across common US Letter stocks.",
   "permissions": ["storage", "contextMenus"],
   "optional_host_permissions": ["https://labs.wiplash.ai/*", "http://127.0.0.1/*", "http://localhost/*"],

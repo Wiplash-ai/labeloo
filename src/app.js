@@ -112,6 +112,7 @@ const elements = Object.fromEntries([
   "templateSelect",
   "startSlotInput",
   "zoomInput",
+  "zoomValue",
   "sheetStage",
   "sheetCanvas",
   "labelInspector",
@@ -597,6 +598,8 @@ function renderSheet() {
   elements.sheetCanvas.style.height = `${selectedTemplate.pageHeightIn}in`;
   elements.sheetCanvas.style.transform = `scale(${state.zoom / 100})`;
   elements.sheetStage.style.setProperty("--sheet-scale", String(state.zoom / 100));
+  elements.zoomInput.value = String(Math.round(state.zoom));
+  elements.zoomValue.value = `${Math.round(state.zoom)}%`;
   elements.sheetPosition.textContent = `Page ${sheet.activePage + 1} of ${totalSheets}`;
   elements.previousSheetButton.disabled = sheet.activePage === 0;
   elements.nextSheetButton.disabled = sheet.activePage >= totalSheets - 1;
@@ -997,21 +1000,34 @@ elements.templateSelect.addEventListener("change", () => {
   scheduleSave();
   showToast(`${selectedTemplate.name} selected`);
 });
-elements.zoomInput.addEventListener("input", () => {
-  state.zoom = Number(elements.zoomInput.value);
+function setZoom(nextZoom) {
+  const minimum = Number(elements.zoomInput.min) || 65;
+  const maximum = Number(elements.zoomInput.max) || 115;
+  const clampedZoom = Math.min(maximum, Math.max(minimum, Math.round(nextZoom)));
+  if (clampedZoom === state.zoom) return;
+  state.zoom = clampedZoom;
   renderSheet();
   scheduleSave();
+}
+
+elements.zoomInput.addEventListener("input", () => {
+  setZoom(Number(elements.zoomInput.value));
 });
+
+let pendingWheelZoom = 0;
+let wheelZoomFrame = null;
 elements.sheetStage.addEventListener("wheel", (event) => {
   if (!event.deltaY) return;
   event.preventDefault();
-  const minimum = Number(elements.zoomInput.min) || 65;
-  const maximum = Number(elements.zoomInput.max) || 115;
-  state.zoom = Math.min(maximum, Math.max(minimum, state.zoom + (event.deltaY < 0 ? 5 : -5)));
-  elements.zoomInput.value = state.zoom;
-  renderSheet();
-  scheduleSave();
-}, { passive: false });
+  event.stopPropagation();
+  pendingWheelZoom += event.deltaY;
+  if (wheelZoomFrame) return;
+  wheelZoomFrame = requestAnimationFrame(() => {
+    if (pendingWheelZoom !== 0) setZoom(state.zoom + (pendingWheelZoom < 0 ? 4 : -4));
+    pendingWheelZoom = 0;
+    wheelZoomFrame = null;
+  });
+}, { capture: true, passive: false });
 elements.previousSheetButton.addEventListener("click", () => {
   currentSheet().activePage -= 1;
   renderSheet();

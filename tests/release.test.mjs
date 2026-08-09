@@ -6,10 +6,23 @@ const root = new URL("../", import.meta.url);
 
 test("manifest uses MV3 and requests sync hosts only when the user opts in", async () => {
   const manifest = JSON.parse(await readFile(new URL("manifest.json", root), "utf8"));
+  const packageMetadata = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(manifest.manifest_version, 3);
+  assert.equal(manifest.version, packageMetadata.version);
+  assert.equal(manifest.version, "0.4.1");
   assert.deepEqual(manifest.permissions.sort(), ["contextMenus", "storage"]);
   assert.equal(manifest.host_permissions, undefined);
   assert.deepEqual(manifest.optional_host_permissions.sort(), ["http://127.0.0.1/*", "http://localhost/*", "https://labs.wiplash.ai/*"]);
+});
+
+test("the main sheet editor exposes mouse-wheel zoom with visible feedback", async () => {
+  const appHtml = await readFile(new URL("src/app.html", root), "utf8");
+  const appSource = await readFile(new URL("src/app.js", root), "utf8");
+  assert.match(appHtml, /id="sheetStage"[^>]+Scroll the mouse wheel here to zoom/);
+  assert.match(appHtml, /id="zoomValue"[^>]*>86%<\/output>/);
+  assert.match(appSource, /sheetStage\.addEventListener\("wheel"/);
+  assert.match(appSource, /capture: true, passive: false/);
+  assert.match(appSource, /requestAnimationFrame/);
 });
 
 test("runtime has no analytics and contains an explicit optional sync client", async () => {
