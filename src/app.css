@@ -278,9 +278,8 @@ svg {
   .print-portal { display: block !important; }
   .print-sheet { position: relative; width: 8.5in; height: 11in; overflow: hidden; break-after: page; }
   .print-sheet:last-child { break-after: auto; }
-  .print-label { position: absolute; padding: .08in .13in; display: flex; flex-direction: column; justify-content: center; overflow: hidden; font-family: Arial, sans-serif; color: #000; }
-  .print-label.align-center { align-items: center; text-align: center; }
-  .print-label span { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .print-label { position: absolute; overflow: hidden; color: #000; }
+  .print-label .sheet-label-content { width: 100%; height: 100%; font-family: "Trebuchet MS", "Avenir Next", sans-serif; }
 }
 
 .icon-button {
@@ -435,6 +434,7 @@ svg {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
+  overflow: hidden;
   border-bottom: 1px solid #d9ddd7;
   background: transparent;
 }
@@ -507,33 +507,45 @@ svg {
 }
 
 .label-movement {
-  width: 28px;
-  display: grid;
-  align-content: center;
+  width: 112px;
+  flex: 0 0 112px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  padding-right: 8px;
   opacity: 0;
 }
 
 .label-list-item:hover .label-movement,
+.label-list-item.selected .label-movement,
 .label-list-item:focus-within .label-movement {
   opacity: 1;
 }
 
 .mini-icon {
-  width: 26px;
-  height: 25px;
+  width: 30px;
+  flex: 0 0 30px;
+  height: 32px;
   display: grid;
   place-items: center;
+  border-radius: 4px;
   background: transparent;
   color: #68736f;
 }
 
 .mini-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 17px;
+  height: 17px;
 }
 
 .mini-icon:hover {
+  background: rgba(8, 127, 120, 0.1);
   color: var(--teal);
+}
+
+.mini-icon--danger:hover {
+  color: var(--danger);
 }
 
 .empty-list {
@@ -903,6 +915,125 @@ svg {
 .compact-dialog > label { padding-inline: 18px; }
 .compact-dialog > footer { padding: 14px 18px; display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; border-top: 1px solid var(--line); }
 .sheet-dialog > .compact-dialog { min-height: 0; grid-template-rows: auto auto auto; }
+.sheet-typography {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.1fr .8fr .8fr;
+  gap: 12px;
+  margin: 0 18px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+}
+.sheet-typography legend {
+  padding: 0 6px;
+  color: #697470;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.sheet-format-field {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.sheet-format-field > span {
+  color: #697470;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.sheet-format-field input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.number-stepper {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(44px, 1fr) 34px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+}
+.number-stepper input,
+.field .number-stepper input,
+.sheet-format-field .number-stepper input {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 4px;
+  border: 0;
+  border-inline: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+}
+.number-stepper button {
+  width: 34px;
+  min-width: 0;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  background: #eef0eb;
+  color: #53615d;
+}
+.number-stepper button:hover {
+  background: var(--teal-wash);
+  color: var(--teal-dark);
+}
+.number-stepper button:disabled {
+  cursor: default;
+  background: #f3f3ef;
+  color: #a7afac;
+}
+.number-stepper button svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  max-width: 100%;
+  max-height: 100%;
+  pointer-events: none;
+}
+.number-stepper input::-webkit-inner-spin-button,
+.number-stepper input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+.sheet-reset-button {
+  grid-column: 1 / -1;
+  min-height: 32px;
+  justify-self: end;
+  padding-inline: 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: #53615d;
+  font-size: 10px;
+  font-weight: 800;
+}
+.sheet-reset-button:hover {
+  border-color: #aebbb7;
+  background: var(--teal-wash);
+  color: var(--teal-dark);
+}
+.sheet-reset-button svg {
+  width: 14px;
+  height: 14px;
+}
 .replace-label-dialog { width: min(420px, calc(100vw - 28px)); }
 .replace-label-shell { display: grid; }
 .replace-label-shell > header { padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--line); }
@@ -1010,7 +1141,14 @@ svg {
 }
 
 .field--font {
-  grid-column: span 1;
+  min-width: 0;
+}
+
+.typography-fields {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .import-dialog {
@@ -1346,6 +1484,10 @@ svg {
   .compact-dialog > footer { grid-column: 1; }
   .compact-dialog > footer { grid-template-columns: 1fr 1fr; }
   .compact-dialog > footer span { display: none; }
+  .sheet-typography { grid-template-columns: 1fr 1fr; }
+  .sheet-typography .sheet-format-field:first-of-type { grid-column: 1 / -1; }
+  .sheet-reset-button { justify-self: start; }
+  .typography-fields { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

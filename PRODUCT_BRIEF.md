@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Labeloo turns names and postal addresses into print-ready label sheets without
-requiring a spreadsheet template, account, or remote service. The browser
+Labeloo turns names, addresses, email contacts, and custom text into print-ready
+label sheets without requiring a spreadsheet template or account. The browser
 extension adds a useful browser-native action: send selected address text from
 any ordinary webpage directly into the current Labeloo sheet.
 
@@ -21,14 +21,23 @@ any ordinary webpage directly into the current Labeloo sheet.
 - Export project data as CSV.
 - Print with exact physical dimensions or use the browser's Save as PDF flow.
 - Chrome, Edge, Opera, and Firefox packaging.
+- Optional account-based, revision-safe project sync across browsers.
+- Commercial import and PDF-rendering API using the same 13-template catalog.
 
 ## Product Boundaries
 
-- No account, analytics, backend, advertising, remote fonts, or CDN.
+- No account is required for local editing, importing, exporting, or printing.
+- No analytics, advertising, remote fonts, or CDN in the editor.
 - No address validation or postal-service API in V1.
 - No shipping-label purchase or postage generation.
 - No personal data from the legacy church-label project is copied into this
   repository.
+
+## Next Version Backlog
+
+Labeloo v0.5.0 targets non-standard stock: square, round, oval, and business
+card layouts. Each layout must pass geometry, browser PDF, and physical print
+calibration before it is advertised as supported.
 
 ## Visual Direction
 

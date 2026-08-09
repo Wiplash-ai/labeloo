@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#16201f">
-  <meta name="description" content="Labeloo turns names, addresses, email lists, and custom text into print-ready Avery-compatible label sheets. Work locally or optionally sync across browsers.">
+  <meta name="description" content="Labeloo turns names, addresses, email lists, and custom text into print-ready sheets across 13 verified rectangular US Letter label layouts.">
   <link rel="canonical" href="https://labs.wiplash.ai/labeloo/">
   <meta property="og:title" content="Labeloo | Labels without the wrestling match">
-  <meta property="og:description" content="Build, validate, organize, and print name tags, addresses, email labels, and custom sheets from a local-first workbench.">
+  <meta property="og:description" content="Build, validate, organize, and print labels across 13 verified address, shipping, return-address, sheet, and name-badge layouts.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://labs.wiplash.ai/labeloo/">
   <link rel="icon" href="assets/labeloo-mark.svg" type="image/svg+xml">
@@ -17,7 +17,7 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/labeloo/"><img src="assets/labeloo-mark.svg" alt=""><strong>Labeloo</strong></a>
-    <nav><a href="#workflow">How it works</a><a href="privacy/">Privacy</a><a href="/">Wiplash Labs</a></nav>
+    <nav><a href="#templates">Templates</a><a href="#workflow">How it works</a><a href="privacy/">Privacy</a><a href="/">Wiplash Labs</a></nav>
     <a class="open-app" href="app/">Open Labeloo</a>
   </header>
 
@@ -35,11 +35,34 @@
         <div class="demo-bar"><div class="demo-brand"><img src="assets/labeloo-mark.svg" alt=""><span>Labeloo</span></div><span>Saved locally</span><button type="button" id="demoPrint">Print labels</button></div>
         <div class="demo-body">
           <aside><small>Sheet contents</small><strong>Labels</strong><button class="label-row active" type="button" data-name="Marlow Finch" data-address="11 Paper Plane Way" data-city="Ink Harbor, ZZ 00001"><i>01</i><span>Address<small>Marlow Finch</small></span></button><button class="label-row" type="button" data-name="Beatrix Morrow" data-address="22 Lantern Lane" data-city="Copper Cove, ZZ 00002"><i>02</i><span>Address<small>Beatrix Morrow</small></span></button><button class="label-row" type="button" data-name="Theo Bellweather" data-address="33 Postmark Place" data-city="Parcel Point, ZZ 00003"><i>03</i><span>Address<small>Theo Bellweather</small></span></button><button class="label-row" type="button" data-name="Nora Quill" data-address="44 Envelope Row" data-city="Letter Lake, ZZ 00004"><i>04</i><span>Address<small>Nora Quill</small></span></button><button class="label-row" type="button" data-name="August Vale" data-address="55 Fountain Pen Road" data-city="Script Springs, ZZ 00005"><i>05</i><span>Address<small>August Vale</small></span></button><button class="label-row" type="button" data-name="Cleo Bright" data-address="66 Sticker Street" data-city="Peelerton, ZZ 00006"><i>06</i><span>Address<small>Cleo Bright</small></span></button><button class="label-row" type="button" data-name="Felix Dovetail" data-address="77 Cardstock Court" data-city="Paper Pines, ZZ 00007"><i>07</i><span>Address<small>Felix Dovetail</small></span></button></aside>
-          <div class="sheet-wrap"><div class="sheet" id="demoSheet"></div></div>
+          <div class="sheet-wrap">
+            <div class="demo-stock-bar">
+              <label for="demoTemplate">Stock</label>
+              <select id="demoTemplate" aria-label="Preview a supported label stock"></select>
+              <span id="demoTemplateMeta">30 labels · 2.625 × 1 in</span>
+            </div>
+            <div class="sheet" id="demoSheet"></div>
+          </div>
           <aside class="editor"><small>Edit label</small><label>Name<input id="demoName" value="Marlow Finch"></label><label>Address<input id="demoAddress" value="11 Paper Plane Way"></label><label>City, state & ZIP<input id="demoCity" value="Ink Harbor, ZZ 00001"></label></aside>
         </div>
         <div id="demoToast" class="demo-toast">Print preview ready</div>
       </div>
+    </section>
+
+    <section id="templates" class="template-catalog">
+      <div class="template-heading">
+        <span class="eyebrow">Verified rectangular US Letter stock</span>
+        <h2>Thirteen layouts. One workbench.</h2>
+        <p>Choose the physical sheet you already have. Labeloo applies its real grid, margins, pitch, capacity, and first available print position.</p>
+      </div>
+      <div class="template-groups">
+        <article><span>Address</span><strong>5160 · 5161 · 5162</strong><p>14, 20, or 30 labels per sheet, including listed 5260 and 8160-series equivalents.</p></article>
+        <article><span>Shipping</span><strong>5163 · 5164 · 5168</strong><p>Four large, six tall, or ten standard shipping labels per sheet.</p></article>
+        <article><span>Return address</span><strong>5167 · 5195</strong><p>Compact 60- and 80-label layouts, including listed 8167 and 8195 equivalents.</p></article>
+        <article><span>Sheet labels</span><strong>5126 · 5165</strong><p>Two half-sheet labels or one full-sheet label for larger designs.</p></article>
+        <article><span>Name badges</span><strong>5390 · 5392 · 5395</strong><p>Six- and eight-badge layouts with room for names and subtitles.</p></article>
+      </div>
+      <p class="compatibility-note">Avery stock numbers are compatibility references. Labeloo is not affiliated with or endorsed by Avery Products Corporation.</p>
     </section>
 
     <section class="availability-band" aria-label="Source code and supported browsers">
@@ -60,8 +83,14 @@
 
     <section id="workflow" class="workflow">
       <div><span>01</span><h2>Bring the list.</h2><p>Paste address blocks or import names, emails, custom text, and postal details from CSV. Labeloo detects useful columns automatically.</p></div>
-      <div><span>02</span><h2>Fix the sheet.</h2><p>Catch malformed emails and incomplete address details, then edit, reorder, align, duplicate, search, and organize separate sheets.</p></div>
-      <div><span>03</span><h2>Print at 100%.</h2><p>Review a true-size Letter preview, then print locally. The browser app does not upload your labels to print them.</p></div>
+      <div><span>02</span><h2>Fix the sheet.</h2><p>Pick one of 13 verified stock layouts, catch malformed details, then edit, reorder, align, duplicate, search, and organize separate sheets.</p></div>
+      <div><span>03</span><h2>Print at 100%.</h2><p>Reuse partially consumed stock, review a true-size Letter preview, then print locally. The browser app does not upload labels to print them.</p></div>
+    </section>
+
+    <section class="api-band">
+      <div><span class="eyebrow">Commercial automation</span><h2>Bring your own list. Get a print-ready PDF.</h2></div>
+      <p>The Labeloo API exposes the same 13-template catalog, imports CSV, XLSX, JSON, text, and text-based PDFs, and renders true-size label sheets.</p>
+      <div class="api-links"><a href="api/docs">Read the API docs</a><a href="api/openapi.json">OpenAPI JSON</a></div>
     </section>
 
     <section class="local-band"><div><span class="eyebrow">Local first, cloud optional</span><h2>Your address book is not the admission price.</h2></div><p>Labeloo works without registration. Sign in only when you want the same projects on another machine. Commercial automation uses a separate scoped API key.</p><a href="privacy/">Read the privacy policy</a></section>

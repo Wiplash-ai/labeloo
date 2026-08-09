@@ -17,6 +17,7 @@ import {
   Plus,
   Printer,
   RefreshCw,
+  RotateCcw,
   Search,
   Settings2,
   Trash2,
@@ -26,6 +27,10 @@ import {
 import { labelsToCsv, parseCsv } from "./csv.js";
 import {
   LABEL_TYPES,
+  MAX_FONT_SIZE,
+  MAX_LINE_HEIGHT,
+  MIN_FONT_SIZE,
+  MIN_LINE_HEIGHT,
   TEMPLATES,
   activeSheet,
   blankLabel,
@@ -62,6 +67,7 @@ const ICONS = {
   Plus,
   Printer,
   RefreshCw,
+  RotateCcw,
   Search,
   Settings2,
   Trash2,
@@ -75,6 +81,12 @@ function renderIcons() {
 }
 
 renderIcons();
+
+document.querySelectorAll("dialog").forEach((dialog) => {
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+});
 
 const $ = (selector) => document.querySelector(selector);
 const elements = Object.fromEntries([
@@ -139,7 +151,8 @@ const elements = Object.fromEntries([
   "accountSubmit", "accountUserName", "accountUserEmail", "cloudProjectStatus",
   "conflictActions", "useCloudButton", "keepLocalButton", "syncNowButton", "logoutButton",
   "accountMessage", "printPortal", "sheetDialog", "sheetDialogTitle", "sheetNameInput",
-  "sheetTypeInput", "deleteSheetButton", "saveSheetButton", "replaceLabelDialog",
+  "sheetTypeInput", "sheetAlignmentControl", "sheetFontSizeInput", "sheetLineHeightInput", "resetSheetTypographyButton",
+  "deleteSheetButton", "saveSheetButton", "replaceLabelDialog",
   "replaceLabelMessage", "closeReplaceLabelButton", "cancelReplaceLabelButton", "confirmReplaceLabelButton"
 ].map((id) => [id, document.getElementById(id)]));
 
@@ -158,6 +171,68 @@ let draggedLabelId = null;
 const currentSheet = () => activeSheet(state);
 const currentLabels = () => currentSheet().labels;
 const currentTemplate = () => getTemplate(currentSheet().templateId);
+let labelMeasureContext = null;
+
+function clamp(value, minimum, maximum, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, number)) : fallback;
+}
+
+function maxFontSizeForLabel(label, sheet = currentSheet(), lineHeight = label.lineHeight) {
+  const template = getTemplate(sheet.templateId);
+  const lines = labelLines(label);
+  const safeLineHeight = clamp(lineHeight, MIN_LINE_HEIGHT, MAX_LINE_HEIGHT, 1.15);
+  const availableWidthPx = Math.max(1, (template.labelWidthIn - 0.26) * 96);
+  const availableHeightPt = Math.max(1, (template.labelHeightIn - 0.18) * 72);
+  const maxByHeight = availableHeightPt / (Math.max(1, lines.length) * safeLineHeight);
+  let maxByWidth = MAX_FONT_SIZE;
+  if (lines.length && globalThis.document) {
+    labelMeasureContext ||= document.createElement("canvas").getContext("2d");
+    if (labelMeasureContext) {
+      labelMeasureContext.font = '100pt "Trebuchet MS", "Avenir Next", sans-serif';
+      const widest = Math.max(...lines.map((line) => labelMeasureContext.measureText(line).width), 1);
+      maxByWidth = 100 * (availableWidthPx / widest);
+    }
+  }
+  return Math.max(MIN_FONT_SIZE, Math.floor(Math.min(MAX_FONT_SIZE, maxByHeight, maxByWidth) * 2) / 2);
+}
+
+function maxFontSizeForSheet(sheet = currentSheet(), lineHeight = sheet.defaultLineHeight) {
+  const populated = sheet.labels.filter(labelHasContent);
+  if (!populated.length) {
+    return maxFontSizeForLabel(blankLabelForSheet(sheet), sheet, lineHeight);
+  }
+  return Math.min(...populated.map((label) => maxFontSizeForLabel(label, sheet, lineHeight)));
+}
+
+function applySheetTypography(label, sheet = currentSheet()) {
+  label.align = sheet.defaultAlign;
+  label.fontSize = sheet.defaultFontSize;
+  label.lineHeight = sheet.defaultLineHeight;
+  return label;
+}
+
+function syncNumberStepper(input) {
+  const stepper = input?.closest(".number-stepper");
+  if (!stepper) return;
+  const value = Number(input.value);
+  const minimum = Number(input.min);
+  const maximum = Number(input.max);
+  const down = stepper.querySelector('[data-step-direction="down"]');
+  const up = stepper.querySelector('[data-step-direction="up"]');
+  if (down) down.disabled = Number.isFinite(value) && Number.isFinite(minimum) && value <= minimum;
+  if (up) up.disabled = Number.isFinite(value) && Number.isFinite(maximum) && value >= maximum;
+}
+
+function blankLabelForSheet(sheet = currentSheet(), overrides = {}) {
+  return blankLabel({
+    type: sheet.defaultType,
+    align: sheet.defaultAlign,
+    fontSize: sheet.defaultFontSize,
+    lineHeight: sheet.defaultLineHeight,
+    ...overrides
+  });
+}
 
 if (!state.selectedId && currentLabels()[0]) state.selectedId = currentLabels()[0].id;
 
@@ -165,6 +240,7 @@ const pendingSelection = await takePendingSelection();
 if (pendingSelection) {
   const captured = parseQuickLabel(pendingSelection.type, pendingSelection.value);
   if (captured) {
+    applySheetTypography(captured);
     currentLabels().push(captured);
     state.selectedId = captured.id;
     const position = labelPosition(currentLabels().length - 1, currentSheet().startSlot, currentSheet().templateId);
@@ -236,6 +312,19 @@ async function syncToCloud(force = false) {
   renderAccount();
 }
 
+function createLabelContent(label) {
+  const content = document.createElement("span");
+  content.className = `sheet-label-content align-${label.align}`;
+  content.style.fontSize = `${label.fontSize}pt`;
+  content.style.lineHeight = String(label.lineHeight);
+  labelLines(label).forEach((line) => {
+    const lineNode = document.createElement("span");
+    lineNode.textContent = line;
+    content.append(lineNode);
+  });
+  return content;
+}
+
 function printLabels() {
   elements.printPortal.replaceChildren();
   const sheetSet = currentSheet();
@@ -251,18 +340,14 @@ function printLabels() {
       const index = globalSlot - (sheetSet.startSlot - 1);
       const label = index >= 0 ? sheetSet.labels[index] : null;
       const cell = document.createElement("div");
-      cell.className = `print-label${label ? ` align-${label.align}` : ""}`;
+      cell.className = "print-label";
       const row = Math.floor(slot / selectedTemplate.columns);
       const column = slot % selectedTemplate.columns;
       cell.style.left = `${selectedTemplate.leftMarginIn + (column * selectedTemplate.horizontalPitchIn)}in`;
       cell.style.top = `${selectedTemplate.topMarginIn + (row * selectedTemplate.verticalPitchIn)}in`;
       cell.style.width = `${selectedTemplate.labelWidthIn}in`;
       cell.style.height = `${selectedTemplate.labelHeightIn}in`;
-      if (label) {
-        cell.style.fontSize = `${label.fontSize}pt`;
-        cell.style.lineHeight = String(label.lineHeight);
-        labelLines(label).forEach((line) => { const span = document.createElement("span"); span.textContent = line; cell.append(span); });
-      }
+      if (label) cell.append(createLabelContent(label));
       page.append(cell);
     }
     elements.printPortal.append(page);
@@ -304,7 +389,7 @@ function copyLabelToRecord(sourceId, targetRecordIndex) {
   if (!source || targetRecordIndex < 0) return;
   const existing = sheet.labels[targetRecordIndex] || null;
   const copy = blankLabel({ ...source, id: existing?.id });
-  while (sheet.labels.length < targetRecordIndex) sheet.labels.push(blankLabel({ type: sheet.defaultType }));
+  while (sheet.labels.length < targetRecordIndex) sheet.labels.push(blankLabelForSheet(sheet));
   if (existing) sheet.labels[targetRecordIndex] = copy;
   else sheet.labels.push(copy);
   state.selectedId = copy.id;
@@ -350,10 +435,12 @@ function createListItem(label, index) {
 
   const copy = document.createElement("span");
   copy.className = "label-list-copy";
+  const lines = labelLines(label);
+  const [primary, ...remaining] = lines;
   const title = document.createElement("strong");
-  title.textContent = label.name || "Untitled label";
+  title.textContent = primary || `Empty ${LABEL_TYPES[label.type].label.toLowerCase()}`;
   const address = document.createElement("small");
-  address.textContent = labelLines(label).slice(label.name ? 1 : 0).join(" · ") || LABEL_TYPES[label.type].description;
+  address.textContent = remaining.join(" · ") || (primary ? LABEL_TYPES[label.type].label : LABEL_TYPES[label.type].description);
   copy.append(title, address);
   button.append(indexBadge, copy);
 
@@ -373,7 +460,17 @@ function createListItem(label, index) {
   down.disabled = index === currentLabels().length - 1;
   down.innerHTML = '<i data-lucide="chevron-down"></i>';
   down.addEventListener("click", () => moveLabel(index, index + 1));
-  movement.append(up, down);
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "mini-icon mini-icon--danger";
+  remove.title = "Delete label";
+  remove.setAttribute("aria-label", `Delete ${label.name || `label ${index + 1}`}`);
+  remove.innerHTML = '<i data-lucide="trash-2"></i>';
+  remove.addEventListener("click", (event) => {
+    event.stopPropagation();
+    deleteLabelAt(index);
+  });
+  movement.append(up, down, remove);
 
   item.append(button, movement);
   return item;
@@ -408,7 +505,7 @@ function editEmptySlot(recordIndex) {
   if (recordIndex < 0) return;
   const sheet = currentSheet();
   while (sheet.labels.length <= recordIndex) {
-    sheet.labels.push(blankLabel({ type: sheet.defaultType }));
+    sheet.labels.push(blankLabelForSheet(sheet));
   }
   selectLabel(sheet.labels[recordIndex].id, false, true);
 }
@@ -447,16 +544,7 @@ function createSheetSlot(slot) {
     cell.classList.toggle("empty", !hasContent);
     cell.draggable = hasContent;
     if (label.id === state.selectedId) cell.classList.add("selected");
-    const content = document.createElement("span");
-    content.className = `sheet-label-content align-${label.align}`;
-    content.style.fontSize = `${label.fontSize}pt`;
-    content.style.lineHeight = String(label.lineHeight);
-    labelLines(label).forEach((line) => {
-      const lineNode = document.createElement("span");
-      lineNode.textContent = line;
-      content.append(lineNode);
-    });
-    cell.append(content);
+    cell.append(createLabelContent(label));
     cell.addEventListener("click", () => selectLabel(label.id, false, true));
     cell.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") return;
@@ -536,7 +624,10 @@ function fillEditor(label) {
     input.setAttribute("aria-invalid", validation.errors[field] ? "true" : "false");
   });
   elements.fontSizeInput.value = label.fontSize;
+  elements.fontSizeInput.max = String(maxFontSizeForLabel(label));
   elements.lineHeightInput.value = label.lineHeight;
+  syncNumberStepper(elements.fontSizeInput);
+  syncNumberStepper(elements.lineHeightInput);
   elements.alignmentControl.querySelectorAll("button").forEach((button) => {
     button.classList.toggle("selected", button.dataset.align === label.align);
   });
@@ -587,7 +678,7 @@ function render() {
 
 function addLabel(label = null) {
   const sheet = currentSheet();
-  const nextLabel = label || blankLabel({ type: sheet.defaultType });
+  const nextLabel = label ? applySheetTypography(label, sheet) : blankLabelForSheet(sheet);
   sheet.labels.push(nextLabel);
   state.selectedId = nextLabel.id;
   sheet.activePage = labelPosition(sheet.labels.length - 1, sheet.startSlot, sheet.templateId).sheet;
@@ -605,15 +696,21 @@ function moveLabel(from, to) {
   scheduleSave();
 }
 
-function deleteSelected() {
-  const index = selectedIndex();
+function deleteLabelAt(index) {
   if (index < 0) return;
   const labels = currentLabels();
+  if (index >= labels.length) return;
   const [removed] = labels.splice(index, 1);
-  state.selectedId = labels[Math.min(index, labels.length - 1)]?.id || null;
+  if (removed.id === state.selectedId) {
+    state.selectedId = labels[Math.min(index, labels.length - 1)]?.id || null;
+  }
   render();
   scheduleSave();
   showToast(`${removed.name || "Label"} removed`);
+}
+
+function deleteSelected() {
+  deleteLabelAt(selectedIndex());
 }
 
 function duplicateSelected() {
@@ -636,8 +733,8 @@ function updateSelectedFromForm() {
   ["name", "subtitle", "email", "customText", "address1", "address2", "city", "state", "postal", "country"].forEach((field) => {
     label[field] = elements[`${field}Input`].value.trimStart();
   });
-  label.fontSize = Math.min(14, Math.max(7, Number(elements.fontSizeInput.value) || 10));
-  label.lineHeight = Math.min(1.6, Math.max(1, Number(elements.lineHeightInput.value) || 1.15));
+  label.lineHeight = clamp(elements.lineHeightInput.value, MIN_LINE_HEIGHT, MAX_LINE_HEIGHT, 1.15);
+  label.fontSize = clamp(elements.fontSizeInput.value, MIN_FONT_SIZE, maxFontSizeForLabel(label, currentSheet(), label.lineHeight), 10);
   renderList();
   renderSheet();
   fillEditor(label);
@@ -663,6 +760,7 @@ async function importLabels() {
   try {
     const labels = activeImportTab === "csv" ? parseCsv(csvText) : parseAddressBlocks(elements.pasteInput.value);
     if (!labels.length) throw new Error("Add at least one complete address.");
+    labels.forEach((label) => applySheetTypography(label));
     currentLabels().push(...labels);
     state.selectedId = labels[0].id;
     currentSheet().activePage = labelPosition(currentLabels().length - labels.length, currentSheet().startSlot, currentSheet().templateId).sheet;
@@ -703,9 +801,21 @@ function openSheetDialog(mode) {
   sheetDialogMode = mode;
   const sheet = currentSheet();
   const creating = mode === "create";
+  const defaultType = LABEL_TYPES[sheet.defaultType] ? sheet.defaultType : "address";
   elements.sheetDialogTitle.textContent = creating ? "Create another sheet" : "Sheet settings";
-  elements.sheetNameInput.value = creating ? `${LABEL_TYPES[sheet.defaultType].label} sheet ${state.sheets.length + 1}` : sheet.name;
-  elements.sheetTypeInput.value = creating ? sheet.defaultType : sheet.defaultType;
+  elements.sheetNameInput.value = creating ? `${LABEL_TYPES[defaultType].label} sheet ${state.sheets.length + 1}` : sheet.name;
+  elements.sheetTypeInput.value = defaultType;
+  if (!elements.sheetTypeInput.value) elements.sheetTypeInput.selectedIndex = 0;
+  elements.sheetFontSizeInput.value = sheet.defaultFontSize;
+  elements.sheetLineHeightInput.value = sheet.defaultLineHeight;
+  elements.sheetFontSizeInput.max = String(creating
+    ? maxFontSizeForLabel(blankLabelForSheet(sheet), sheet, sheet.defaultLineHeight)
+    : maxFontSizeForSheet(sheet, sheet.defaultLineHeight));
+  syncNumberStepper(elements.sheetFontSizeInput);
+  syncNumberStepper(elements.sheetLineHeightInput);
+  elements.sheetAlignmentControl.querySelectorAll("button[data-align]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.align === sheet.defaultAlign);
+  });
   elements.deleteSheetButton.classList.toggle("hidden", creating || state.sheets.length === 1);
   elements.sheetDialog.showModal();
   queueMicrotask(() => elements.sheetNameInput.select());
@@ -718,18 +828,29 @@ function saveSheetSettings() {
     elements.sheetNameInput.focus();
     return;
   }
+  const defaultAlign = elements.sheetAlignmentControl.querySelector("button.selected")?.dataset.align === "center" ? "center" : "left";
+  const defaultLineHeight = clamp(elements.sheetLineHeightInput.value, MIN_LINE_HEIGHT, MAX_LINE_HEIGHT, 1.15);
+  const fontLimit = sheetDialogMode === "create"
+    ? maxFontSizeForLabel(blankLabelForSheet(currentSheet()), currentSheet(), defaultLineHeight)
+    : maxFontSizeForSheet(currentSheet(), defaultLineHeight);
+  const defaultFontSize = clamp(elements.sheetFontSizeInput.value, MIN_FONT_SIZE, fontLimit, 10);
   if (sheetDialogMode === "create") {
-    const sheet = blankSheet({ name, defaultType: elements.sheetTypeInput.value });
-    const first = blankLabel({ type: sheet.defaultType });
+    const sheet = blankSheet({ name, defaultType: elements.sheetTypeInput.value, defaultAlign, defaultFontSize, defaultLineHeight });
+    const first = blankLabelForSheet(sheet);
     sheet.labels.push(first);
     state.sheets.push(sheet);
     state.activeSheetId = sheet.id;
     state.selectedId = first.id;
     showToast("New sheet created");
   } else {
-    currentSheet().name = name;
-    currentSheet().defaultType = elements.sheetTypeInput.value;
-    showToast("Sheet settings saved");
+    const sheet = currentSheet();
+    sheet.name = name;
+    sheet.defaultType = elements.sheetTypeInput.value;
+    sheet.defaultAlign = defaultAlign;
+    sheet.defaultFontSize = defaultFontSize;
+    sheet.defaultLineHeight = defaultLineHeight;
+    sheet.labels.forEach((label) => applySheetTypography(label, sheet));
+    showToast(`Formatting applied to ${sheet.labels.length} label${sheet.labels.length === 1 ? "" : "s"}`);
   }
   elements.sheetDialog.close();
   render();
@@ -815,6 +936,39 @@ elements.sheetSelect.addEventListener("change", () => switchSheet(elements.sheet
 elements.addSheetButton.addEventListener("click", () => openSheetDialog("create"));
 elements.sheetMenuButton.addEventListener("click", () => openSheetDialog("edit"));
 elements.saveSheetButton.addEventListener("click", saveSheetSettings);
+elements.sheetAlignmentControl.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-align]");
+  if (!button) return;
+  elements.sheetAlignmentControl.querySelectorAll("button[data-align]").forEach((item) => item.classList.toggle("selected", item === button));
+});
+elements.resetSheetTypographyButton.addEventListener("click", () => {
+  elements.sheetAlignmentControl.querySelectorAll("button[data-align]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.align === "left");
+  });
+  elements.sheetFontSizeInput.value = "10";
+  elements.sheetLineHeightInput.value = "1.15";
+  elements.sheetFontSizeInput.max = String(sheetDialogMode === "create"
+    ? maxFontSizeForLabel(blankLabelForSheet(currentSheet()), currentSheet(), 1.15)
+    : maxFontSizeForSheet(currentSheet(), 1.15));
+  syncNumberStepper(elements.sheetFontSizeInput);
+  syncNumberStepper(elements.sheetLineHeightInput);
+  elements.resetSheetTypographyButton.blur();
+});
+elements.sheetLineHeightInput.addEventListener("input", () => {
+  const lineHeight = clamp(elements.sheetLineHeightInput.value, MIN_LINE_HEIGHT, MAX_LINE_HEIGHT, 1.15);
+  elements.sheetFontSizeInput.max = String(maxFontSizeForSheet(currentSheet(), lineHeight));
+  syncNumberStepper(elements.sheetFontSizeInput);
+  syncNumberStepper(elements.sheetLineHeightInput);
+});
+document.querySelectorAll("[data-step-target]").forEach((button) => button.addEventListener("click", () => {
+  const input = document.getElementById(button.dataset.stepTarget);
+  if (!input) return;
+  if (button.dataset.stepDirection === "up") input.stepUp();
+  else input.stepDown();
+  input.focus({ preventScroll: true });
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  syncNumberStepper(input);
+}));
 elements.deleteSheetButton.addEventListener("click", removeCurrentSheet);
 elements.closeReplaceLabelButton.addEventListener("click", () => elements.replaceLabelDialog.close());
 elements.cancelReplaceLabelButton.addEventListener("click", () => elements.replaceLabelDialog.close());

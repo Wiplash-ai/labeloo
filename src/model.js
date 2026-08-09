@@ -1,4 +1,8 @@
 export const STORAGE_KEY = "labelooWorkspaceV2";
+export const MIN_FONT_SIZE = 4;
+export const MAX_FONT_SIZE = 240;
+export const MIN_LINE_HEIGHT = 0.8;
+export const MAX_LINE_HEIGHT = 3;
 
 const template = (config) => Object.freeze({
   pageWidthIn: 8.5,
@@ -70,14 +74,19 @@ export function blankLabel(overrides = {}) {
 
 export function blankSheet(overrides = {}) {
   const type = LABEL_TYPES[overrides.defaultType] ? overrides.defaultType : "address";
+  const fontSize = Number(overrides.defaultFontSize);
+  const lineHeight = Number(overrides.defaultLineHeight);
   return {
     id: overrides.id || uid("sheet"),
     name: text(overrides.name || `${LABEL_TYPES[type].label} sheet`, 60),
-    defaultType: type,
     startSlot: 1,
     activePage: 0,
     labels: [],
     ...overrides,
+    defaultType: type,
+    defaultAlign: overrides.defaultAlign === "center" ? "center" : "left",
+    defaultFontSize: Number.isFinite(fontSize) ? Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, fontSize)) : 10,
+    defaultLineHeight: Number.isFinite(lineHeight) ? Math.min(MAX_LINE_HEIGHT, Math.max(MIN_LINE_HEIGHT, lineHeight)) : 1.15,
     templateId: getTemplate(overrides.templateId).id
   };
 }
@@ -119,8 +128,8 @@ export function sanitizeLabel(raw = {}) {
     postal: text(raw.postal, 20),
     country: text(raw.country, 80),
     align: raw.align === "center" ? "center" : "left",
-    fontSize: Number.isFinite(fontSize) ? Math.min(14, Math.max(7, fontSize)) : 10,
-    lineHeight: Number.isFinite(lineHeight) ? Math.min(1.6, Math.max(1, lineHeight)) : 1.15
+    fontSize: Number.isFinite(fontSize) ? Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, fontSize)) : 10,
+    lineHeight: Number.isFinite(lineHeight) ? Math.min(MAX_LINE_HEIGHT, Math.max(MIN_LINE_HEIGHT, lineHeight)) : 1.15
   });
 }
 
@@ -129,11 +138,16 @@ export function sanitizeSheet(raw = {}, index = 0) {
   const startSlot = Number(raw.startSlot);
   const activePage = Number(raw.activePage ?? raw.activeSheet);
   const defaultType = LABEL_TYPES[raw.defaultType] ? raw.defaultType : labels[0]?.type || "address";
+  const defaultFontSize = Number(raw.defaultFontSize ?? labels[0]?.fontSize);
+  const defaultLineHeight = Number(raw.defaultLineHeight ?? labels[0]?.lineHeight);
   const selectedTemplate = getTemplate(raw.templateId);
   return blankSheet({
     id: typeof raw.id === "string" && raw.id ? raw.id : uid("sheet"),
     name: text(raw.name || `Sheet ${index + 1}`, 60),
     defaultType,
+    defaultAlign: raw.defaultAlign === "center" || (!raw.defaultAlign && labels[0]?.align === "center") ? "center" : "left",
+    defaultFontSize,
+    defaultLineHeight,
     templateId: selectedTemplate.id,
     startSlot: Number.isInteger(startSlot) ? Math.min(selectedTemplate.labelsPerSheet, Math.max(1, startSlot)) : 1,
     activePage: Number.isInteger(activePage) ? Math.max(0, activePage) : 0,

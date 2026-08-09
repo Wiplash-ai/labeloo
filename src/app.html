@@ -81,7 +81,7 @@
             <div class="sheet-set-control">
               <label for="sheetSelect"><span>Sheet</span><select id="sheetSelect" aria-label="Choose a label sheet"></select></label>
               <button id="addSheetButton" class="icon-button icon-button--accent" type="button" title="Create another sheet" aria-label="Create another sheet"><i data-lucide="plus"></i></button>
-              <button id="sheetMenuButton" class="icon-button" type="button" title="Rename or remove this sheet" aria-label="Rename or remove this sheet"><i data-lucide="settings-2"></i></button>
+              <button id="sheetMenuButton" class="icon-button" type="button" title="Sheet and typography settings" aria-label="Sheet and typography settings"><i data-lucide="settings-2"></i></button>
             </div>
 
             <div class="page-stepper" aria-label="Printed page navigation">
@@ -206,14 +206,24 @@
                   <button type="button" data-align="center" title="Align center"><i data-lucide="align-center"></i></button>
                 </div>
               </label>
-              <label class="field field--font">
-                <span>Font size</span>
-                <input id="fontSizeInput" type="number" min="7" max="14" step="0.5" value="10">
-              </label>
-              <label class="field field--font">
-                <span>Line height</span>
-                <input id="lineHeightInput" type="number" min="1" max="1.6" step="0.05" value="1.15">
-              </label>
+              <div class="typography-fields field--wide">
+                <label class="field field--font">
+                  <span>Font size</span>
+                  <div class="number-stepper">
+                    <button type="button" data-step-target="fontSizeInput" data-step-direction="down" title="Decrease font size" aria-label="Decrease font size"><i data-lucide="chevron-down"></i></button>
+                    <input id="fontSizeInput" type="number" min="4" max="240" step="0.5" value="10">
+                    <button type="button" data-step-target="fontSizeInput" data-step-direction="up" title="Increase font size" aria-label="Increase font size"><i data-lucide="chevron-up"></i></button>
+                  </div>
+                </label>
+                <label class="field field--font">
+                  <span>Line height</span>
+                  <div class="number-stepper">
+                    <button type="button" data-step-target="lineHeightInput" data-step-direction="down" title="Decrease line height" aria-label="Decrease line height"><i data-lucide="chevron-down"></i></button>
+                    <input id="lineHeightInput" type="number" min="0.8" max="3" step="0.05" value="1.15">
+                    <button type="button" data-step-target="lineHeightInput" data-step-direction="up" title="Increase line height" aria-label="Increase line height"><i data-lucide="chevron-up"></i></button>
+                  </div>
+                </label>
+              </div>
             </form>
           </div>
         </aside>
@@ -295,7 +305,20 @@
       <form method="dialog" class="dialog-shell compact-dialog">
         <header><div><span class="eyebrow">Label collection</span><h2 id="sheetDialogTitle">Create a sheet</h2></div><button class="icon-button" value="cancel" title="Close" aria-label="Close"><i data-lucide="x"></i></button></header>
         <label class="field field--wide"><span>Sheet name</span><input id="sheetNameInput" type="text" maxlength="60" value="Address sheet"></label>
-        <label class="field field--wide"><span>Default label type</span><select id="sheetTypeInput"><option value="address">Address</option><option value="name">Name tag</option><option value="email">Email</option><option value="custom">Custom</option></select></label>
+        <label class="field field--wide"><span>Default label type</span><select id="sheetTypeInput" aria-label="Default label type"><option value="address" selected>Address</option><option value="name">Name tag</option><option value="email">Email</option><option value="custom">Custom</option></select></label>
+        <fieldset class="sheet-typography">
+          <legend>All label formatting</legend>
+          <div class="sheet-format-field">
+            <span>Alignment</span>
+            <div id="sheetAlignmentControl" class="segmented-control" role="group" aria-label="Alignment for all labels">
+              <button type="button" data-align="left" title="Align all labels left" aria-label="Align all labels left"><i data-lucide="align-left"></i></button>
+              <button type="button" data-align="center" title="Center all labels" aria-label="Center all labels"><i data-lucide="align-center"></i></button>
+            </div>
+          </div>
+          <label class="sheet-format-field"><span>Font size</span><div class="number-stepper"><button type="button" data-step-target="sheetFontSizeInput" data-step-direction="down" title="Decrease sheet font size" aria-label="Decrease sheet font size"><i data-lucide="chevron-down"></i></button><input id="sheetFontSizeInput" type="number" min="4" max="240" step="0.5" value="10"><button type="button" data-step-target="sheetFontSizeInput" data-step-direction="up" title="Increase sheet font size" aria-label="Increase sheet font size"><i data-lucide="chevron-up"></i></button></div></label>
+          <label class="sheet-format-field"><span>Line height</span><div class="number-stepper"><button type="button" data-step-target="sheetLineHeightInput" data-step-direction="down" title="Decrease sheet line height" aria-label="Decrease sheet line height"><i data-lucide="chevron-down"></i></button><input id="sheetLineHeightInput" type="number" min="0.8" max="3" step="0.05" value="1.15"><button type="button" data-step-target="sheetLineHeightInput" data-step-direction="up" title="Increase sheet line height" aria-label="Increase sheet line height"><i data-lucide="chevron-up"></i></button></div></label>
+          <button id="resetSheetTypographyButton" class="button sheet-reset-button" type="button"><i data-lucide="rotate-ccw"></i><span>Back to defaults</span></button>
+        </fieldset>
         <footer><button id="deleteSheetButton" class="button button--danger hidden" type="button">Remove sheet</button><span></span><button class="button button--quiet" value="cancel">Cancel</button><button id="saveSheetButton" class="button button--primary" type="button">Save sheet</button></footer>
       </form>
     </dialog>

@@ -85,7 +85,7 @@ test("workspace data is bounded and sanitized", () => {
   assert.equal(clean.projectName, "Test");
   assert.equal(activeSheet(clean).startSlot, 30);
   assert.equal(clean.zoom, 65);
-  assert.equal(activeSheet(clean).labels[0].fontSize, 14);
+  assert.equal(activeSheet(clean).labels[0].fontSize, 99);
   assert.equal(activeSheet(clean).labels[0].align, "left");
   assert.equal(clean.version, 2);
 });
@@ -97,6 +97,24 @@ test("workspaces preserve multiple named sheets", () => {
   assert.equal(clean.sheets.length, 2);
   assert.equal(activeSheet(clean).name, "Conference");
   assert.equal(activeSheet(clean).defaultType, "name");
+});
+
+test("sheet-wide typography defaults are sanitized and preserved", () => {
+  const sheet = blankSheet({
+    name: "Centered badges",
+    defaultAlign: "center",
+    defaultFontSize: 12,
+    defaultLineHeight: 1.3
+  });
+  const clean = sanitizeWorkspace({ sheets: [sheet], activeSheetId: sheet.id });
+  assert.equal(activeSheet(clean).defaultAlign, "center");
+  assert.equal(activeSheet(clean).defaultFontSize, 12);
+  assert.equal(activeSheet(clean).defaultLineHeight, 1.3);
+
+  const bounded = blankSheet({ defaultAlign: "sideways", defaultFontSize: 999, defaultLineHeight: 0 });
+  assert.equal(bounded.defaultAlign, "left");
+  assert.equal(bounded.defaultFontSize, 240);
+  assert.equal(bounded.defaultLineHeight, 0.8);
 });
 
 test("label validation is type-specific and does not claim deliverability", () => {

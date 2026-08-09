@@ -74,8 +74,19 @@ Labeloo is not affiliated with or endorsed by Avery Products Corporation.
 Address validation checks formatting and completeness only; it does not confirm
 that an address is deliverable.
 
-See [Specialty Label Template Roadmap](docs/SPECIALTY_TEMPLATE_ROADMAP.md) for
-the verified approach to round, oval, square, card, and nonuniform stock.
+## Supported stock catalog
+
+| Use | Canonical stock | Listed equivalents | Labels per sheet |
+| --- | --- | --- | ---: |
+| Address | 5160, 5161, 5162 | 5260-series and 8160-series equivalents | 14, 20, 30 |
+| Shipping | 5163, 5164, 5168 | 5263, 8163, 8164, 8168 | 4, 6, 10 |
+| Return address | 5167, 5195 | 8167, 8195 | 60, 80 |
+| Sheet | 5126, 5165 | 8126, 8165 | 1, 2 |
+| Name badge | 5390, 5392, 5395 | 8390, 8392, 8395 | 6, 8 |
+
+The next release target is specialty and non-standard stock. See the
+[Specialty Label Template Roadmap](docs/SPECIALTY_TEMPLATE_ROADMAP.md) for the
+verified approach to round, oval, square, card, and nonuniform layouts.
 
 ## License
 

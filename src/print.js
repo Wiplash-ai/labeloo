@@ -16,18 +16,21 @@ for (let sheetIndex = 0; sheetIndex < sheetCount(sheet); sheetIndex += 1) {
     const row = Math.floor(position.slot / template.columns);
     const column = position.slot % template.columns;
     const cell = document.createElement("div");
-    cell.className = `print-label align-${label.align}`;
+    cell.className = "print-label";
     cell.style.left = `${template.leftMarginIn + (column * template.horizontalPitchIn)}in`;
     cell.style.top = `${template.topMarginIn + (row * template.verticalPitchIn)}in`;
     cell.style.width = `${template.labelWidthIn}in`;
     cell.style.height = `${template.labelHeightIn}in`;
-    cell.style.fontSize = `${label.fontSize}pt`;
-    cell.style.lineHeight = String(label.lineHeight);
+    const content = document.createElement("span");
+    content.className = `print-label-content align-${label.align}`;
+    content.style.fontSize = `${label.fontSize}pt`;
+    content.style.lineHeight = String(label.lineHeight);
     labelLines(label).forEach((line) => {
       const lineNode = document.createElement("span");
       lineNode.textContent = line;
-      cell.append(lineNode);
+      content.append(lineNode);
     });
+    cell.append(content);
     page.append(cell);
   });
   sheets.append(page);

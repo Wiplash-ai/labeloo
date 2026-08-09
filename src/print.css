@@ -70,19 +70,25 @@ body {
 .print-label {
   position: absolute;
   overflow: hidden;
+}
+
+.print-label-content {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 0.09in 0.13in;
+  font-family: "Trebuchet MS", "Avenir Next", sans-serif;
 }
 
-.print-label span {
+.print-label-content span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.print-label.align-center {
+.print-label-content.align-center {
   align-items: center;
   text-align: center;
 }

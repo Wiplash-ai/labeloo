@@ -1,8 +1,13 @@
 # Specialty Label Template Roadmap
 
-Labeloo currently supports 13 verified rectangular US Letter layouts. The next
-template pass should add shape-aware stock families without weakening print
-alignment.
+Labeloo currently supports 13 verified rectangular US Letter layouts.
+
+## Next release target
+
+**Target: Labeloo v0.5.0.** The next template release is reserved for
+non-standard and specialty stock. It should add shape-aware square, round,
+oval, and business-card families without weakening print alignment. These
+templates are backlog targets, not currently supported layouts.
 
 ## Verified next families
 
