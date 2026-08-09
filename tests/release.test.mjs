@@ -90,7 +90,9 @@ test("product page demonstrates and documents the full stock catalog", async () 
   assert.match(html, /Thirteen layouts\. One workbench\./);
   assert.match(html, /id="demoTemplate"/);
   assert.match(html, /api\/docs/);
-  assert.equal((html.match(/data-lpignore="true"/g) || []).length, 3);
+  assert.equal((html.match(/class="demo-text-field"/g) || []).length, 3);
+  assert.doesNotMatch(html, /<input[^>]+id="demo(?:Name|Address|City)"/);
+  assert.match(source, /fields\[0\]\.textContent = row\.dataset\.name/);
   assert.match(source, /127\.0\.0\.1:8790/);
   assert.equal((source.match(/id: "avery-/g) || []).length, 13);
   assert.match(roadmap, /Target: Labeloo v0\.5\.0/);

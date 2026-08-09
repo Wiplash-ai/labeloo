@@ -99,20 +99,22 @@ templateSelect.addEventListener("change", renderSheet);
 labels.forEach((row) =>
   row.addEventListener("click", () => {
     labels.forEach((item) => item.classList.toggle("active", item === row));
-    fields[0].value = row.dataset.name;
-    fields[1].value = row.dataset.address;
-    fields[2].value = row.dataset.city;
+    fields[0].textContent = row.dataset.name;
+    fields[1].textContent = row.dataset.address;
+    fields[2].textContent = row.dataset.city;
   }),
 );
 fields.forEach((field, index) =>
   field.addEventListener("input", () => {
     const active = document.querySelector(".label-row.active");
-    active.dataset[["name", "address", "city"][index]] = field.value;
-    active.querySelector("span").childNodes[index ? 1 : 0].textContent =
-      field.value;
+    active.dataset[["name", "address", "city"][index]] = field.textContent;
+    if (index === 0) active.querySelector("small").textContent = field.textContent;
     renderSheet();
   }),
 );
+fields.forEach((field) => field.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") event.preventDefault();
+}));
 document.getElementById("demoPrint").addEventListener("click", () => {
   const toast = document.getElementById("demoToast");
   toast.classList.add("visible");
