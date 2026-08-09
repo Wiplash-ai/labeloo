@@ -2,6 +2,7 @@ const labels = [...document.querySelectorAll(".label-row")];
 const sheet = document.getElementById("demoSheet");
 const templateSelect = document.getElementById("demoTemplate");
 const templateMeta = document.getElementById("demoTemplateMeta");
+const isLocalReview = ["127.0.0.1", "localhost"].includes(window.location.hostname);
 const fields = [
   document.getElementById("demoName"),
   document.getElementById("demoAddress"),
@@ -39,6 +40,12 @@ const fictionalAddresses = [
   ["Basil Stone", "29 Granite Guide", "Pebble Place, ZZ 00029"],
   ["Faye Ember", "30 Candle Card", "Glow Grove, ZZ 00030"],
 ];
+
+if (isLocalReview) {
+  document.querySelectorAll("[data-api-path]").forEach((link) => {
+    link.href = `http://127.0.0.1:8790/${link.dataset.apiPath}`;
+  });
+}
 
 const templates = [
   { id: "avery-5160-30", label: "Avery 5160 · Address", compatibility: "5160 / 8160 / 5260", columns: 3, rows: 10, count: 30, width: 2.625, height: 1 },

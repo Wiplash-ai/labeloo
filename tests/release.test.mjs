@@ -90,6 +90,8 @@ test("product page demonstrates and documents the full stock catalog", async () 
   assert.match(html, /Thirteen layouts\. One workbench\./);
   assert.match(html, /id="demoTemplate"/);
   assert.match(html, /api\/docs/);
+  assert.equal((html.match(/data-lpignore="true"/g) || []).length, 3);
+  assert.match(source, /127\.0\.0\.1:8790/);
   assert.equal((source.match(/id: "avery-/g) || []).length, 13);
   assert.match(roadmap, /Target: Labeloo v0\.5\.0/);
   assert.match(roadmap, /not currently supported layouts/);
