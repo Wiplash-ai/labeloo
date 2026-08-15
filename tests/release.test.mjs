@@ -9,10 +9,10 @@ test("manifest uses MV3 and requests sync hosts only when the user opts in", asy
   const packageMetadata = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.version, packageMetadata.version);
-  assert.equal(manifest.version, "0.4.1");
+  assert.equal(manifest.version, "0.4.3");
   assert.deepEqual(manifest.permissions.sort(), ["contextMenus", "storage"]);
   assert.equal(manifest.host_permissions, undefined);
-  assert.deepEqual(manifest.optional_host_permissions.sort(), ["http://127.0.0.1/*", "http://localhost/*", "https://labs.wiplash.ai/*"]);
+  assert.deepEqual(manifest.optional_host_permissions, ["https://labs.wiplash.ai/*"]);
 });
 
 test("the main sheet editor exposes mouse-wheel zoom with visible feedback", async () => {
