@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <style>
+      :root {
+        --ink: #16201f;
+        --teal: #087f78;
+        --teal-dark: #075e59;
+        --gold: #d8a327;
+        --paper: #fffef9;
+        --canvas: #f2efe6;
+        --muted: #5f6d69;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        padding: 20px;
+        display: grid;
+        gap: 20px;
+        background: #ddd;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .promo {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 86% 14%, rgba(216, 163, 39, 0.24), transparent 28%),
+          linear-gradient(135deg, #fffefa 0%, var(--canvas) 64%, #dbe7e2 100%);
+      }
+
+      .promo::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        inset: 0;
+        opacity: 0.42;
+        background-image: radial-gradient(rgba(8, 127, 120, 0.16) 0.8px, transparent 0.8px);
+        background-size: 18px 18px;
+      }
+
+      .promo::after {
+        content: "";
+        position: absolute;
+        z-index: 6;
+        inset: 0;
+        pointer-events: none;
+        border: 1px solid rgba(22, 32, 31, 0.12);
+      }
+
+      .small { width: 440px; height: 280px; }
+      .marquee { width: 1400px; height: 560px; }
+
+      .brand {
+        position: absolute;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+      }
+
+      .brand img {
+        display: block;
+        box-shadow: 0 14px 28px rgba(22, 32, 31, 0.16);
+      }
+
+      .brand-copy { margin-left: 13px; }
+
+      .eyebrow {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--teal);
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+
+      .brand strong {
+        display: block;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .headline {
+        position: absolute;
+        z-index: 3;
+        margin: 0;
+        max-width: 54%;
+        font-size: 34px;
+        line-height: 0.98;
+        letter-spacing: -0.045em;
+      }
+
+      .headline em {
+        color: var(--teal);
+        font-style: normal;
+      }
+
+      .promise {
+        position: absolute;
+        z-index: 3;
+        margin: 0;
+        color: var(--muted);
+        font-weight: 650;
+      }
+
+      .sheet {
+        position: absolute;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 18px;
+        border: 1px solid rgba(22, 32, 31, 0.1);
+        border-radius: 5px;
+        background: var(--paper);
+        box-shadow: 0 28px 70px rgba(22, 32, 31, 0.22);
+        transform: rotate(3deg);
+      }
+
+      .label {
+        position: relative;
+        min-height: 58px;
+        padding: 10px;
+        overflow: hidden;
+        border: 1px dashed rgba(8, 127, 120, 0.34);
+        border-radius: 4px;
+        background: #fffefb;
+      }
+
+      .label.selected {
+        border: 2px solid var(--teal);
+        box-shadow: inset 0 0 0 2px rgba(8, 127, 120, 0.08);
+      }
+
+      .label b,
+      .label span {
+        display: block;
+        height: 5px;
+        border-radius: 99px;
+        background: var(--ink);
+      }
+
+      .label b { width: 58%; }
+      .label span { width: 82%; margin-top: 7px; opacity: 0.38; }
+      .label span:last-child { width: 66%; margin-top: 4px; }
+
+      .flow-pill {
+        position: absolute;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 12px;
+        border-radius: 999px;
+        color: white;
+        background: var(--teal);
+        box-shadow: 0 12px 28px rgba(8, 127, 120, 0.28);
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .flow-pill i { color: #ffe197; font-style: normal; }
+
+      .app-card {
+        position: absolute;
+        z-index: 2;
+        overflow: hidden;
+        border: 1px solid rgba(22, 32, 31, 0.16);
+        border-radius: 24px;
+        background: white;
+        box-shadow: 0 34px 90px rgba(22, 32, 31, 0.26);
+        transform: perspective(1200px) rotateY(-4deg) rotateZ(0.5deg);
+      }
+
+      .app-card::before {
+        content: "";
+        display: block;
+        height: 34px;
+        background: linear-gradient(90deg, var(--ink), #20322f);
+      }
+
+      .app-card img {
+        display: block;
+        width: 100%;
+        height: calc(100% - 34px);
+        object-fit: cover;
+        object-position: 50% 28%;
+      }
+
+      .feature-row {
+        position: absolute;
+        z-index: 3;
+        display: flex;
+        gap: 10px;
+      }
+
+      .feature-row span {
+        padding: 9px 12px;
+        border: 1px solid rgba(8, 127, 120, 0.24);
+        border-radius: 999px;
+        color: var(--teal-dark);
+        background: rgba(255, 254, 249, 0.82);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .small .brand { left: 22px; top: 20px; }
+      .small .brand img { width: 46px; height: 46px; border-radius: 12px; }
+      .small .headline { left: 22px; top: 92px; }
+      .small .promise { left: 23px; bottom: 24px; max-width: 195px; font-size: 11px; line-height: 1.35; }
+      .small .sheet { right: 20px; top: 35px; width: 178px; height: 214px; }
+      .small .flow-pill { right: 17px; bottom: 19px; }
+      .small .app-card,
+      .small .feature-row { display: none; }
+
+      .marquee .brand { left: 72px; top: 58px; }
+      .marquee .brand img { width: 76px; height: 76px; border-radius: 18px; }
+      .marquee .brand-copy { margin-left: 20px; }
+      .marquee .eyebrow { margin-bottom: 6px; font-size: 12px; }
+      .marquee .brand strong { font-size: 44px; }
+      .marquee .headline { left: 72px; top: 184px; max-width: 545px; font-size: 66px; line-height: 0.95; }
+      .marquee .promise { left: 76px; top: 350px; max-width: 480px; font-size: 19px; line-height: 1.45; }
+      .marquee .feature-row { left: 76px; bottom: 62px; }
+      .marquee .sheet,
+      .marquee .flow-pill { display: none; }
+      .marquee .app-card { right: 62px; top: 60px; width: 695px; height: 450px; }
+    </style>
+  </head>
+  <body>
+    <section class="promo small">
+      <div class="brand">
+        <img src="../src/assets/labeloo-mark.svg" alt="">
+        <div class="brand-copy"><span class="eyebrow">Print-ready labels</span><strong>Labeloo</strong></div>
+      </div>
+      <h1 class="headline">Labels,<br><em>ready to print.</em></h1>
+      <p class="promise">Address, shipping, name badges &amp; more.</p>
+      <div class="sheet">
+        <div class="label selected"><b></b><span></span><span></span></div>
+        <div class="label"><b></b><span></span><span></span></div>
+        <div class="label"><b></b><span></span><span></span></div>
+        <div class="label"><b></b><span></span><span></span></div>
+        <div class="label"><b></b><span></span><span></span></div>
+        <div class="label"><b></b><span></span><span></span></div>
+      </div>
+      <div class="flow-pill">CSV <i>→</i> labels <i>→</i> print</div>
+    </section>
+
+    <section class="promo marquee">
+      <div class="brand">
+        <img src="../src/assets/labeloo-mark.svg" alt="">
+        <div class="brand-copy"><span class="eyebrow">Address &amp; shipping label maker</span><strong>Labeloo</strong></div>
+      </div>
+      <h1 class="headline">From list to labels<br><em>in minutes.</em></h1>
+      <p class="promise">Import CSV or Excel. Edit, preview, and print accurate label sheets right from your browser.</p>
+      <div class="feature-row"><span>13 US Letter layouts</span><span>Local-first</span><span>Print at 100%</span></div>
+      <div class="app-card"><img src="source/preview-source.png" alt=""></div>
+    </section>
+  </body>
+</html>
