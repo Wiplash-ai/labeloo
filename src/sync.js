@@ -99,12 +99,25 @@ function accountOriginPermission(serviceBase) {
   return `${new URL(normalizeServiceBase(serviceBase)).origin}/*`;
 }
 
+export function accountServicePermissions(serviceBase, options = {}) {
+  const protocol = options.protocol ?? globalThis.location?.protocol ?? "";
+  const manifest = options.manifest ?? globalThis.chrome?.runtime?.getManifest?.() ?? {};
+  const permissions = { origins: [accountOriginPermission(serviceBase)] };
+  const firefoxDataCollection = manifest.browser_specific_settings
+    ?.gecko
+    ?.data_collection_permissions
+    ?.optional;
+
+  if (protocol === "moz-extension:" && Array.isArray(firefoxDataCollection) && firefoxDataCollection.length) {
+    permissions.data_collection = [...firefoxDataCollection];
+  }
+
+  return permissions;
+}
+
 async function servicePermission(account, interactive) {
   if (!isExtensionApp() || !globalThis.chrome?.permissions) return true;
-  const permissions = { origins: [accountOriginPermission(account.serviceBase)] };
-  if (globalThis.browser?.permissions) {
-    permissions.data_collection = ["authenticationInfo", "personallyIdentifyingInfo"];
-  }
+  const permissions = accountServicePermissions(account.serviceBase);
   if (await chrome.permissions.contains(permissions)) return true;
   return interactive ? chrome.permissions.request(permissions) : false;
 }

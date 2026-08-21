@@ -207,7 +207,7 @@ const elements = Object.fromEntries([
 ].map((id) => [id, document.getElementById(id)]));
 
 let state = await loadWorkspace();
-let activeImportTab = "paste";
+let activeImportTab = "spreadsheet";
 let importedWorkbook = null;
 let importedSheetIndex = 0;
 let spreadsheetPlan = null;
@@ -846,7 +846,7 @@ function updateSelectedFromForm() {
   scheduleSave();
 }
 
-function showImportDialog(tab = "paste") {
+function showImportDialog(tab = "spreadsheet") {
   setImportTab(tab);
   elements.importMessage.textContent = "";
   elements.importDialog.showModal();
@@ -1244,7 +1244,7 @@ function removeCurrentSheet() {
 
 elements.addLabelButton.addEventListener("click", () => addLabel());
 elements.pasteAddressesButton.addEventListener("click", () => showImportDialog("paste"));
-elements.importButton.addEventListener("click", () => showImportDialog("paste"));
+elements.importButton.addEventListener("click", () => showImportDialog("spreadsheet"));
 elements.closeImportButton.addEventListener("click", () => elements.importDialog.close());
 elements.confirmImportButton.addEventListener("click", importLabels);
 elements.exportButton.addEventListener("click", exportCsv);

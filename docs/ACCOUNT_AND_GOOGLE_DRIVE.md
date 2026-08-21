@@ -65,6 +65,20 @@ under `labeloo-account/`. It owns:
 The public extension stores only its local workspace, sync metadata, and an
 opaque Labeloo app session. Credential-shaped provider responses are rejected.
 
+## Legacy API compatibility
+
+Labeloo 0.4.1 and earlier use the separate password-account API at
+`https://labs.wiplash.ai/labeloo/api/v1`. That contract remains available for
+installed clients that have not upgraded, but new releases must not call it or
+declare its host permission.
+
+Do not redirect the legacy route to the Wiplash account BFF. The authentication
+and project payloads are intentionally different, so a transparent proxy would
+break older clients. Keep the legacy API and its Labs routing operational until
+supported extension versions have migrated and usage has reached zero for an
+agreed retirement window. The new account service remains independently owned
+and routed at `https://auth.wiplash.ai/labeloo`.
+
 ## Production checklist
 
 1. Provision the confidential `labeloo-web` client in the shared Wiplash realm

@@ -246,18 +246,18 @@
         </header>
 
         <div class="import-tabs" role="tablist">
-          <button id="pasteImportTab" type="button" class="selected" role="tab" aria-selected="true" aria-controls="pastePanel" tabindex="0" data-import-tab="paste">Paste addresses</button>
-          <button id="spreadsheetImportTab" type="button" role="tab" aria-selected="false" aria-controls="spreadsheetPanel" tabindex="-1" data-import-tab="spreadsheet">Import spreadsheet</button>
+          <button id="spreadsheetImportTab" type="button" class="selected" role="tab" aria-selected="true" aria-controls="spreadsheetPanel" tabindex="0" data-import-tab="spreadsheet">Spreadsheet</button>
+          <button id="pasteImportTab" type="button" role="tab" aria-selected="false" aria-controls="pastePanel" tabindex="-1" data-import-tab="paste">List</button>
         </div>
 
-        <section id="pastePanel" class="import-panel" role="tabpanel" aria-labelledby="pasteImportTab">
+        <section id="pastePanel" class="import-panel hidden" role="tabpanel" aria-labelledby="pasteImportTab">
           <label class="field field--wide">
             <span>Separate labels with a blank line</span>
             <textarea id="pasteInput" rows="12" placeholder="Alex Rivera&#10;123 Splash Lane&#10;Fort Worth, TX 76102&#10;&#10;Wiplash Labs&#10;44 Signal Street, Suite 8&#10;Austin, TX 78701"></textarea>
           </label>
         </section>
 
-        <section id="spreadsheetPanel" class="import-panel import-panel--spreadsheet hidden" role="tabpanel" aria-labelledby="spreadsheetImportTab">
+        <section id="spreadsheetPanel" class="import-panel import-panel--spreadsheet" role="tabpanel" aria-labelledby="spreadsheetImportTab">
           <div id="spreadsheetChooser" class="spreadsheet-chooser">
             <label class="file-drop" for="spreadsheetInput">
               <i data-lucide="file-spreadsheet"></i>
@@ -354,17 +354,15 @@
           <button id="closeAccountButton" class="icon-button" type="button" title="Close" aria-label="Close"><i data-lucide="x"></i></button>
         </header>
         <section id="signedOutAccount" class="account-content">
-          <p>Your labels stay in this browser unless you sign in and choose to sync them.</p>
           <div class="wiplash-sso-card">
-            <span class="account-avatar"><i data-lucide="cloud"></i></span>
-            <div><strong>One Wiplash.ai account</strong><small>Use the same secure sign-in as VideoStitch and GlassWare. Labeloo never receives your Wiplash or Google password.</small></div>
+            <span class="account-avatar account-avatar--wiplash" aria-hidden="true"><img src="assets/wiplash-account-mark.png" alt=""></span>
+            <div><strong>Sign in with Wiplash.ai</strong><small>Sign in for cross-browser project sync and private Google Drive import. Local editing, uploaded files, printing, and shared-link imports still work without an account.</small></div>
           </div>
-          <p class="sync-benefit"><i data-lucide="refresh-cw"></i><span>Sign in for cross-browser project sync and private Google Drive import. Local editing, uploaded files, printing, and shared-link imports still work without an account.</span></p>
           <p id="accountMigrationNote" class="account-migration-note hidden">Labeloo now uses Wiplash.ai single sign-on. Your local labels are still here; older Labeloo cloud accounts are not linked automatically.</p>
           <button id="accountSubmit" class="button button--primary wiplash-signin-button" type="button"><i data-lucide="log-in"></i><span>Continue with Wiplash.ai</span></button>
         </section>
         <section id="signedInAccount" class="account-content hidden">
-          <div class="account-identity"><span class="account-avatar"><i data-lucide="cloud"></i></span><div><strong id="accountUserName"></strong><small id="accountUserEmail"></small></div></div>
+          <div class="account-identity"><span class="account-avatar account-avatar--wiplash" aria-hidden="true"><img src="assets/wiplash-account-mark.png" alt=""></span><div><strong id="accountUserName"></strong><small id="accountUserEmail"></small></div></div>
           <div class="sync-status"><span>Current project</span><strong id="cloudProjectStatus">Ready to sync</strong></div>
           <div id="conflictActions" class="conflict-actions hidden"><p>This project changed on another device. Choose which copy to keep.</p><button id="useCloudButton" class="button button--quiet" type="button">Use cloud copy</button><button id="keepLocalButton" class="button button--primary" type="button">Keep this copy</button></div>
           <div class="account-actions"><button id="syncNowButton" class="button button--primary" type="button"><i data-lucide="refresh-cw"></i><span id="syncNowLabel">Enable project sync</span></button><button id="logoutButton" class="button button--quiet" type="button">Sign out</button></div>

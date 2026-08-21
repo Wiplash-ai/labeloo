@@ -1,13 +1,43 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { normalizeServiceBase } from "../src/sync.js";
+import { accountServicePermissions, normalizeServiceBase } from "../src/sync.js";
 
 test("account service URLs require HTTPS outside loopback", () => {
   assert.equal(normalizeServiceBase("https://auth.wiplash.ai/labeloo/"), "https://auth.wiplash.ai/labeloo");
   assert.equal(normalizeServiceBase("http://127.0.0.1:3040/labeloo"), "http://127.0.0.1:3040/labeloo");
   assert.throws(() => normalizeServiceBase("http://auth.wiplash.ai/labeloo"), /HTTPS/);
   assert.throws(() => normalizeServiceBase("https://user:secret@auth.wiplash.ai/labeloo"), /invalid/);
+});
+
+test("account permissions keep Firefox data consent out of Chromium payloads", () => {
+  const firefoxManifest = {
+    browser_specific_settings: {
+      gecko: {
+        data_collection_permissions: {
+          optional: ["authenticationInfo", "personallyIdentifyingInfo"],
+        },
+      },
+    },
+  };
+
+  assert.deepEqual(
+    accountServicePermissions("https://auth.wiplash.ai/labeloo", {
+      protocol: "chrome-extension:",
+      manifest: firefoxManifest,
+    }),
+    { origins: ["https://auth.wiplash.ai/*"] },
+  );
+  assert.deepEqual(
+    accountServicePermissions("https://auth.wiplash.ai/labeloo", {
+      protocol: "moz-extension:",
+      manifest: firefoxManifest,
+    }),
+    {
+      origins: ["https://auth.wiplash.ai/*"],
+      data_collection: ["authenticationInfo", "personallyIdentifyingInfo"],
+    },
+  );
 });
 
 test("Wiplash identity, Drive selection, and project sync remain separate client actions", async () => {

@@ -37,7 +37,7 @@ print them on common rectangular US Letter label stock.
 - Flag repeated printed text with red sheet references and direct links between
   duplicate labels in the editor.
 - Browser-local auto-save and CSV export.
-- Wiplash.ai single sign-on shared with VideoStitch and GlassWare.
+- Optional Wiplash.ai sign-in for private Google Drive import and cross-browser sync.
 - Optional, explicitly enabled, revision-safe cross-device project sync.
 - Print at 100% scale or use the browser's Save as PDF command.
 - Chrome, Edge, Opera, Firefox, and standalone web builds.

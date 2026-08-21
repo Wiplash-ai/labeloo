@@ -35,14 +35,17 @@ test("the main sheet editor exposes mouse-wheel zoom with visible feedback", asy
   assert.match(appSource, /requestAnimationFrame/);
 });
 
-test("runtime has no analytics and contains explicit optional Wiplash sync", async () => {
-  const paths = ["background.js", "src/app.html", "src/app.js", "src/storage.js", "src/sync.js"];
+test("runtime and public copy contain explicit optional Wiplash sync", async () => {
+  const paths = ["README.md", "background.js", "src/app.html", "src/app.js", "src/storage.js", "src/sync.js"];
   const source = (await Promise.all(paths.map((path) => readFile(new URL(path, root), "utf8")))).join("\n");
   assert.doesNotMatch(source, /google-analytics|mixpanel|segment\.io|XMLHttpRequest/i);
   assert.match(source, /Wiplash single sign-on/i);
   assert.match(source, /chrome\.permissions\.request/);
   assert.match(source, /data_collection/);
   assert.match(source, /Continue with Wiplash\.ai/);
+  assert.match(source, /assets\/wiplash-account-mark\.png/);
+  assert.match(source, /Sign in for cross-browser project sync/);
+  assert.doesNotMatch(source, /VideoStitch|GlassWare/);
   assert.doesNotMatch(source, /\/auth\/(?:login|register)/);
 });
 
@@ -135,10 +138,14 @@ test("spreadsheet import tabs and file chooser expose keyboard-accessible state"
   const html = await readFile(new URL("src/app.html", root), "utf8");
   const css = await readFile(new URL("src/app.css", root), "utf8");
   const source = await readFile(new URL("src/app.js", root), "utf8");
-  assert.match(html, /id="pasteImportTab"[^>]+role="tab"[^>]+aria-selected="true"[^>]+aria-controls="pastePanel"/);
-  assert.match(html, /id="spreadsheetImportTab"[^>]+role="tab"[^>]+aria-selected="false"[^>]+aria-controls="spreadsheetPanel"/);
+  assert.match(html, /id="spreadsheetImportTab"[^>]+role="tab"[^>]+aria-selected="true"[^>]+aria-controls="spreadsheetPanel"[^>]*>Spreadsheet</);
+  assert.match(html, /id="pasteImportTab"[^>]+role="tab"[^>]+aria-selected="false"[^>]+aria-controls="pastePanel"[^>]*>List</);
+  assert.ok(html.indexOf('id="spreadsheetImportTab"') < html.indexOf('id="pasteImportTab"'));
   assert.match(html, /id="pastePanel"[^>]+role="tabpanel"[^>]+aria-labelledby="pasteImportTab"/);
   assert.match(html, /id="spreadsheetPanel"[^>]+role="tabpanel"[^>]+aria-labelledby="spreadsheetImportTab"/);
+  assert.match(source, /let activeImportTab = "spreadsheet"/);
+  assert.match(source, /importButton\.addEventListener\("click", \(\) => showImportDialog\("spreadsheet"\)\)/);
+  assert.match(source, /pasteAddressesButton\.addEventListener\("click", \(\) => showImportDialog\("paste"\)\)/);
   assert.match(source, /button\.setAttribute\("aria-selected", String\(selected\)\)/);
   assert.match(source, /event\.key === "ArrowRight"/);
   assert.match(source, /event\.key === "Home"/);

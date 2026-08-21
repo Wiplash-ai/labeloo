@@ -254,10 +254,10 @@ svg {
 .account-shell h2 { margin: 3px 0 0; font-family: Georgia, serif; font-size: 23px; }
 .account-content { padding: 20px; display: grid; gap: 14px; }
 .account-content > p { margin: 0 0 2px; color: #5e6b68; font-size: 13px; line-height: 1.55; }
-.wiplash-sso-card { padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 6px; background: linear-gradient(135deg, var(--paper), var(--panel)); }
+.wiplash-sso-card { padding: 16px; display: flex; align-items: center; gap: 14px; border: 1px solid var(--line); border-radius: 6px; background: linear-gradient(135deg, var(--paper), var(--panel)); }
 .wiplash-sso-card > div { min-width: 0; display: grid; gap: 4px; }
-.wiplash-sso-card strong { font-family: Georgia, serif; font-size: 17px; }
-.wiplash-sso-card small { color: #68736f; font-size: 12px; line-height: 1.45; }
+.wiplash-sso-card strong { font-family: Georgia, serif; font-size: 18px; }
+.wiplash-sso-card small { color: #68736f; font-size: 13px; line-height: 1.5; }
 .wiplash-signin-button { width: 100%; justify-content: center; }
 .account-content > .account-migration-note { padding: 10px 11px; border: 1px solid #d8a327; border-left-width: 3px; background: var(--gold-wash); color: #745518; font-size: 11px; }
 .account-tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); }
@@ -267,6 +267,8 @@ svg {
 .sync-service select { width: 100%; height: 36px; margin-top: 8px; border: 1px solid var(--line); border-radius: 4px; background: white; }
 .account-identity { display: flex; align-items: center; gap: 12px; }
 .account-avatar { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--teal); }
+.account-avatar--wiplash { width: 52px; height: 52px; flex: 0 0 52px; overflow: hidden; background: transparent; }
+.account-avatar--wiplash img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .account-identity div { display: grid; gap: 3px; }
 .account-identity small { color: #68736f; }
 .sync-status { padding: 13px; display: flex; justify-content: space-between; gap: 12px; border: 1px solid var(--line); background: var(--panel); font-size: 12px; }
@@ -948,8 +950,6 @@ svg {
 .duplicate-summary button { padding: 0; background: transparent; color: var(--danger); font-size: inherit; font-weight: 900; text-decoration: underline; text-underline-offset: 2px; }
 .duplicate-summary button:hover { color: #791f1b; }
 
-.sync-benefit { padding: 11px; display: flex; gap: 9px; border: 1px solid var(--line); background: var(--panel); color: #5e6b68; font-size: 11px; line-height: 1.45; }
-.sync-benefit svg { flex: 0 0 auto; color: var(--teal); }
 
 .sheet-dialog { width: min(470px, calc(100vw - 28px)); padding: 0; border: 0; border-radius: 7px; color: var(--ink); background: var(--paper); box-shadow: var(--shadow); }
 .sheet-dialog::backdrop { background: rgba(12, 19, 18, .62); backdrop-filter: blur(4px); }
