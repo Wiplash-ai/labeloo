@@ -11,7 +11,9 @@ import {
   Download,
   FileSpreadsheet,
   FileUp,
+  HardDrive,
   Info,
+  Link2,
   LogIn,
   MousePointer2,
   Plus,
@@ -24,7 +26,7 @@ import {
   X,
   createIcons
 } from "lucide";
-import { labelsToCsv, parseCsv } from "./csv.js";
+import { labelsToCsv } from "./csv.js";
 import {
   LABEL_TYPES,
   MAX_FONT_SIZE,
@@ -35,18 +37,40 @@ import {
   activeSheet,
   blankLabel,
   blankSheet,
+  duplicateLabelGroups,
   labelHasContent,
   labelLines,
   labelPosition,
   getTemplate,
+  insertLabelsIntoBlankSlots,
   parseAddressBlocks,
   parseQuickLabel,
   sanitizeWorkspace,
   sheetCount,
   validateLabel
 } from "./model.js";
+import {
+  IMPORT_FIELDS,
+  MAX_LABELS_PER_SHEET,
+  autoMapping,
+  columnDescriptors,
+  createImportPlan,
+  googleSheetExportUrl,
+  labelsFromTable,
+  orientedRows,
+  readSpreadsheetBytes,
+  readSpreadsheetFile
+} from "./spreadsheet.js";
 import { loadWorkspace, saveWorkspace, takePendingSelection } from "./storage.js";
-import { authenticate, loadAccount, logout, pullWorkspace, pushWorkspace } from "./sync.js";
+import {
+  chooseGoogleDriveSheet,
+  loadAccount,
+  logout,
+  pullWorkspace,
+  pushWorkspace,
+  refreshAccount,
+  signIn
+} from "./sync.js";
 
 const ICONS = {
   AlignCenter,
@@ -61,7 +85,9 @@ const ICONS = {
   Download,
   FileSpreadsheet,
   FileUp,
+  HardDrive,
   Info,
+  Link2,
   LogIn,
   MousePointer2,
   Plus,
@@ -137,20 +163,43 @@ const elements = Object.fromEntries([
   "fontSizeInput",
   "lineHeightInput",
   "validationSummary",
+  "duplicateSummary",
+  "duplicateLinks",
   "importDialog",
   "closeImportButton",
   "pastePanel",
-  "csvPanel",
+  "spreadsheetPanel",
   "pasteInput",
-  "csvInput",
-  "csvFileName",
+  "spreadsheetChooser",
+  "spreadsheetInput",
+  "googleSheetToggle",
+  "googleSheetImport",
+  "googleSheetUrl",
+  "googleSheetButton",
+  "googleDriveImport",
+  "googleDriveButton",
+  "googleDriveButtonLabel",
+  "googleDriveStatus",
+  "spreadsheetSetup",
+  "spreadsheetFileName",
+  "spreadsheetDimensions",
+  "replaceSpreadsheetButton",
+  "workbookSheetSelect",
+  "headerAxisLabel",
+  "dataAxisLabel",
+  "headerRowSelect",
+  "firstDataRowSelect",
+  "mappingCount",
+  "columnMapping",
+  "importPreviewCount",
+  "importPreviewList",
   "importMessage",
   "confirmImportButton",
+  "confirmImportLabel",
   "toast",
   "accountDialog", "closeAccountButton", "signedOutAccount", "signedInAccount",
-  "accountNameField", "accountName", "accountEmail", "accountPassword",
-  "accountSubmit", "accountUserName", "accountUserEmail", "cloudProjectStatus",
-  "conflictActions", "useCloudButton", "keepLocalButton", "syncNowButton", "logoutButton",
+  "accountSubmit", "accountMigrationNote", "accountUserName", "accountUserEmail", "cloudProjectStatus",
+  "conflictActions", "useCloudButton", "keepLocalButton", "syncNowButton", "syncNowLabel", "logoutButton",
   "accountMessage", "printPortal", "sheetDialog", "sheetDialogTitle", "sheetNameInput",
   "sheetTypeInput", "sheetAlignmentControl", "sheetFontSizeInput", "sheetLineHeightInput", "resetSheetTypographyButton",
   "deleteSheetButton", "saveSheetButton", "replaceLabelDialog",
@@ -158,13 +207,16 @@ const elements = Object.fromEntries([
 ].map((id) => [id, document.getElementById(id)]));
 
 let state = await loadWorkspace();
-let csvText = "";
 let activeImportTab = "paste";
+let importedWorkbook = null;
+let importedSheetIndex = 0;
+let spreadsheetPlan = null;
+let spreadsheetLabels = [];
 let saveTimer = null;
 let toastTimer = null;
 let cloudTimer = null;
 let account = await loadAccount();
-let accountMode = "login";
+let accountReady = false;
 let sheetDialogMode = "create";
 let pendingLabelCopy = null;
 let draggedLabelId = null;
@@ -273,7 +325,7 @@ function scheduleSave() {
     state = await saveWorkspace(state);
     elements.saveState.textContent = "Saved locally";
     elements.saveState.classList.remove("saving");
-    if (account.token && !account.conflict) {
+    if (accountReady && account.user && account.syncEnabled && account.capabilities.projectSync && !account.conflict) {
       clearTimeout(cloudTimer);
       cloudTimer = setTimeout(() => syncToCloud(), 850);
     }
@@ -281,16 +333,35 @@ function scheduleSave() {
 }
 
 function renderAccount() {
-  const signedIn = Boolean(account.token && account.user);
+  const signedIn = Boolean(account.user);
   elements.accountButtonLabel.textContent = signedIn ? "Account" : "Sign in";
   elements.signedOutAccount.classList.toggle("hidden", signedIn);
   elements.signedInAccount.classList.toggle("hidden", !signedIn);
+  elements.accountMigrationNote.classList.toggle("hidden", !account.legacyAccountDetected);
   elements.conflictActions.classList.toggle("hidden", !account.conflict);
   if (signedIn) {
     elements.accountUserName.textContent = account.user.name;
     elements.accountUserEmail.textContent = account.user.email;
-    elements.cloudProjectStatus.textContent = account.conflict ? "Needs your choice" : account.projectId ? `Cloud revision ${account.revision}` : "Ready for first sync";
+    elements.cloudProjectStatus.textContent = account.conflict
+      ? "Needs your choice"
+      : account.syncEnabled && account.projectId ? `Cloud revision ${account.revision}` : "Local only";
   }
+  elements.syncNowButton.disabled = signedIn && !account.capabilities.projectSync;
+  elements.syncNowLabel.textContent = account.syncEnabled ? "Sync now" : "Enable project sync";
+  const driveAvailable = signedIn && account.capabilities.googleDrive;
+  elements.googleDriveButton.disabled = signedIn && !driveAvailable;
+  elements.googleDriveButtonLabel.textContent = driveAvailable
+    ? "Choose a Google Sheet"
+    : signedIn ? "My Drive is unavailable" : "Sign in to use My Drive";
+  const driveIcon = document.createElement("i");
+  driveIcon.dataset.lucide = driveAvailable ? "hard-drive" : "log-in";
+  elements.googleDriveButton.replaceChildren(driveIcon, elements.googleDriveButtonLabel);
+  elements.googleDriveStatus.textContent = driveAvailable
+    ? `Signed in as ${account.user.email}. Google will ask you to choose one sheet; your Drive stays private.`
+    : signedIn
+      ? "Private Google Drive import has not been configured for this Labeloo environment."
+      : "Sign in with Wiplash.ai to choose one private Google Sheet.";
+  renderIcons();
 }
 
 function setAccountMessage(message, isError = false) {
@@ -298,15 +369,15 @@ function setAccountMessage(message, isError = false) {
   elements.accountMessage.classList.toggle("error", isError);
 }
 
-async function syncToCloud(force = false) {
-  if (!account.token) return;
+async function syncToCloud(force = false, enable = false) {
+  if (!account.user || !account.capabilities.projectSync || (!account.syncEnabled && !enable)) return;
   elements.saveState.textContent = "Syncing…";
   try {
-    account = await pushWorkspace(account, sanitizeWorkspace(state), force);
+    account = await pushWorkspace({ ...account, syncEnabled: true }, sanitizeWorkspace(state), force);
     elements.saveState.textContent = "Saved + synced";
     setAccountMessage("Project synced.");
   } catch (error) {
-    account = await loadAccount();
+    account = error.account || account;
     elements.saveState.textContent = account.conflict ? "Sync needs review" : "Saved locally";
     setAccountMessage(error.message, true);
   }
@@ -511,7 +582,7 @@ function editEmptySlot(recordIndex) {
   selectLabel(sheet.labels[recordIndex].id, false, true);
 }
 
-function createSheetSlot(slot) {
+function createSheetSlot(slot, duplicateGroups) {
   const selectedTemplate = currentTemplate();
   const row = Math.floor(slot / selectedTemplate.columns);
   const column = slot % selectedTemplate.columns;
@@ -542,8 +613,16 @@ function createSheetSlot(slot) {
     }
   } else {
     const hasContent = labelHasContent(label);
+    const duplicateIndexes = duplicateGroups.get(label.id) || [];
     cell.classList.toggle("empty", !hasContent);
     cell.draggable = hasContent;
+    if (duplicateIndexes.length) {
+      cell.classList.add("has-duplicate");
+      slotNumber.classList.add("duplicate-reference");
+      slotNumber.textContent = `#${recordIndex + 1}`;
+      slotNumber.title = `Duplicate label text · reference ${recordIndex + 1}`;
+      cell.setAttribute("aria-label", `${cell.getAttribute("aria-label")}, duplicate text, reference ${recordIndex + 1}`);
+    }
     if (label.id === state.selectedId) cell.classList.add("selected");
     cell.append(createLabelContent(label));
     cell.addEventListener("click", () => selectLabel(label.id, false, true));
@@ -590,10 +669,11 @@ function createSheetSlot(slot) {
 
 function renderSheet() {
   const sheet = currentSheet();
+  const duplicateGroups = duplicateLabelGroups(sheet.labels);
   const selectedTemplate = getTemplate(sheet.templateId);
   const totalSheets = sheetCount(sheet);
   sheet.activePage = Math.min(Math.max(0, sheet.activePage), totalSheets - 1);
-  elements.sheetCanvas.replaceChildren(...Array.from({ length: selectedTemplate.labelsPerSheet }, (_, slot) => createSheetSlot(slot)));
+  elements.sheetCanvas.replaceChildren(...Array.from({ length: selectedTemplate.labelsPerSheet }, (_, slot) => createSheetSlot(slot, duplicateGroups)));
   elements.sheetCanvas.style.width = `${selectedTemplate.pageWidthIn}in`;
   elements.sheetCanvas.style.height = `${selectedTemplate.pageHeightIn}in`;
   elements.sheetCanvas.style.transform = `scale(${state.zoom / 100})`;
@@ -603,6 +683,27 @@ function renderSheet() {
   elements.sheetPosition.textContent = `Page ${sheet.activePage + 1} of ${totalSheets}`;
   elements.previousSheetButton.disabled = sheet.activePage === 0;
   elements.nextSheetButton.disabled = sheet.activePage >= totalSheets - 1;
+}
+
+function renderDuplicateSummary(label) {
+  const references = duplicateLabelGroups(currentLabels()).get(label.id) || [];
+  elements.duplicateLinks.replaceChildren();
+  elements.duplicateSummary.classList.toggle("hidden", !references.length);
+  if (!references.length) return;
+  references.forEach((index, referenceIndex) => {
+    if (referenceIndex > 0) {
+      const separator = document.createElement("span");
+      separator.textContent = referenceIndex === references.length - 1 ? " and " : ", ";
+      elements.duplicateLinks.append(separator);
+    }
+    const duplicate = currentLabels()[index];
+    const link = document.createElement("button");
+    link.type = "button";
+    link.textContent = `label #${index + 1}`;
+    link.title = `Select duplicate label ${index + 1}`;
+    link.addEventListener("click", () => selectLabel(duplicate.id));
+    elements.duplicateLinks.append(link);
+  });
 }
 
 function fillEditor(label) {
@@ -619,6 +720,7 @@ function fillEditor(label) {
   elements.validationSummary.textContent = validation.valid
     ? `${LABEL_TYPES[label.type].label} details look ready to print.`
     : `Check ${Object.keys(validation.errors).length} field${Object.keys(validation.errors).length === 1 ? "" : "s"} before printing.`;
+  renderDuplicateSummary(label);
   ["name", "email", "customText", "address1", "city", "state", "postal"].forEach((field) => {
     const error = document.getElementById(`${field}Error`);
     const input = elements[`${field}Input`];
@@ -748,30 +850,297 @@ function showImportDialog(tab = "paste") {
   setImportTab(tab);
   elements.importMessage.textContent = "";
   elements.importDialog.showModal();
-  setTimeout(() => (tab === "paste" ? elements.pasteInput : elements.csvInput).focus(), 0);
+  setTimeout(() => (tab === "paste" ? elements.pasteInput : elements.spreadsheetInput).focus(), 0);
 }
 
 function setImportTab(tab) {
-  activeImportTab = tab === "csv" ? "csv" : "paste";
-  document.querySelectorAll("[data-import-tab]").forEach((button) => button.classList.toggle("selected", button.dataset.importTab === activeImportTab));
+  activeImportTab = tab === "spreadsheet" ? "spreadsheet" : "paste";
+  document.querySelectorAll("[data-import-tab]").forEach((button) => {
+    const selected = button.dataset.importTab === activeImportTab;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
+  });
   elements.pastePanel.classList.toggle("hidden", activeImportTab !== "paste");
-  elements.csvPanel.classList.toggle("hidden", activeImportTab !== "csv");
+  elements.spreadsheetPanel.classList.toggle("hidden", activeImportTab !== "spreadsheet");
+  elements.confirmImportLabel.textContent = activeImportTab === "spreadsheet" && spreadsheetLabels.length
+    ? `Add ${spreadsheetLabels.length} label${spreadsheetLabels.length === 1 ? "" : "s"}`
+    : "Add labels";
+  elements.confirmImportButton.disabled = activeImportTab === "spreadsheet" && !spreadsheetLabels.length;
+}
+
+function activeWorkbookSheet() {
+  return importedWorkbook?.sheets?.[importedSheetIndex] || null;
+}
+
+function rowSummary(row) {
+  const values = (row || []).filter(Boolean).slice(0, 3).join(" · ");
+  return values.length > 56 ? `${values.slice(0, 53)}…` : values;
+}
+
+function replaceOptions(select, options, selectedValue) {
+  select.replaceChildren(...options.map(({ value, label }) => {
+    const option = document.createElement("option");
+    option.value = String(value);
+    option.textContent = label;
+    return option;
+  }));
+  select.value = String(selectedValue);
+}
+
+function setGoogleSheetImporterExpanded(expanded) {
+  elements.googleSheetToggle.setAttribute("aria-expanded", String(expanded));
+  elements.googleSheetImport.classList.toggle("hidden", !expanded);
+  if (expanded) queueMicrotask(() => elements.googleSheetUrl.focus());
+}
+
+function renderSpreadsheetPreview(rows) {
+  elements.importPreviewList.replaceChildren();
+  elements.importMessage.textContent = "";
+  try {
+    spreadsheetLabels = labelsFromTable(rows, spreadsheetPlan, MAX_LABELS_PER_SHEET);
+    const remaining = MAX_LABELS_PER_SHEET - currentLabels().filter(labelHasContent).length;
+    if (spreadsheetLabels.length > remaining) {
+      throw new Error(`This sheet has room for ${remaining} more label${remaining === 1 ? "" : "s"}.`);
+    }
+    spreadsheetLabels.slice(0, 5).forEach((label, index) => {
+      const item = document.createElement("article");
+      const number = document.createElement("span");
+      number.className = "preview-number";
+      number.textContent = String(index + 1).padStart(2, "0");
+      const content = document.createElement("div");
+      const lines = labelLines(label);
+      lines.slice(0, 5).forEach((line, lineIndex) => {
+        const text = document.createElement(lineIndex === 0 ? "strong" : "span");
+        text.textContent = line;
+        content.append(text);
+      });
+      item.append(number, content);
+      elements.importPreviewList.append(item);
+    });
+    if (spreadsheetLabels.length > 5) {
+      const remainingNote = document.createElement("p");
+      remainingNote.className = "preview-more";
+      remainingNote.textContent = `+ ${spreadsheetLabels.length - 5} more ready to import`;
+      elements.importPreviewList.append(remainingNote);
+    }
+    elements.importPreviewCount.textContent = `${spreadsheetLabels.length} ready`;
+  } catch (error) {
+    spreadsheetLabels = [];
+    const empty = document.createElement("p");
+    empty.className = "preview-empty";
+    empty.textContent = error.message || "Map a field to preview your labels.";
+    elements.importPreviewList.append(empty);
+    elements.importPreviewCount.textContent = "0 ready";
+  }
+  elements.confirmImportButton.disabled = !spreadsheetLabels.length;
+  elements.confirmImportLabel.textContent = spreadsheetLabels.length
+    ? `Add ${spreadsheetLabels.length} label${spreadsheetLabels.length === 1 ? "" : "s"}`
+    : "Add labels";
+}
+
+function renderColumnMapping(rows) {
+  const columns = columnDescriptors(rows, spreadsheetPlan.headerRowIndex, spreadsheetPlan.firstDataRowIndex)
+    .filter((column) => column.header || column.samples.length || spreadsheetPlan.mapping[column.index]);
+  elements.columnMapping.replaceChildren();
+  columns.forEach((column) => {
+    const record = document.createElement("article");
+    record.className = "column-map-row";
+    const source = document.createElement("div");
+    source.className = "source-column";
+    const reference = document.createElement("span");
+    reference.className = "column-reference";
+    reference.textContent = column.reference;
+    const sourceText = document.createElement("div");
+    const heading = document.createElement("strong");
+    heading.textContent = column.label;
+    const sample = document.createElement("small");
+    sample.textContent = column.samples.length ? column.samples.join(" · ") : "No sample values";
+    sourceText.append(heading, sample);
+    source.append(reference, sourceText);
+
+    const arrow = document.createElement("span");
+    arrow.className = "mapping-arrow";
+    arrow.textContent = "→";
+    arrow.setAttribute("aria-hidden", "true");
+
+    const destination = document.createElement("label");
+    destination.className = "mapping-destination";
+    const destinationLabel = document.createElement("span");
+    destinationLabel.textContent = "Place in";
+    const select = document.createElement("select");
+    select.setAttribute("aria-label", `Map ${column.label}`);
+    IMPORT_FIELDS.forEach((field) => {
+      const option = document.createElement("option");
+      option.value = field.value;
+      option.textContent = field.label;
+      select.append(option);
+    });
+    select.value = spreadsheetPlan.mapping[column.index] || "";
+    select.addEventListener("change", () => {
+      const nextField = select.value;
+      if (nextField) {
+        Object.keys(spreadsheetPlan.mapping).forEach((sourceIndex) => {
+          if (sourceIndex !== String(column.index) && spreadsheetPlan.mapping[sourceIndex] === nextField) {
+            spreadsheetPlan.mapping[sourceIndex] = "";
+          }
+        });
+      }
+      spreadsheetPlan.mapping[column.index] = nextField;
+      renderSpreadsheetMapping();
+    });
+    destination.append(destinationLabel, select);
+    record.append(source, arrow, destination);
+    elements.columnMapping.append(record);
+  });
+  const mappedCount = Object.values(spreadsheetPlan.mapping).filter(Boolean).length;
+  elements.mappingCount.textContent = `${mappedCount} of ${columns.length} mapped`;
+}
+
+function renderSpreadsheetMapping() {
+  const rows = orientedRows(activeWorkbookSheet(), spreadsheetPlan.orientation);
+  renderColumnMapping(rows);
+  renderSpreadsheetPreview(rows);
+}
+
+function renderSpreadsheetStructure() {
+  const sheet = activeWorkbookSheet();
+  if (!sheet || !spreadsheetPlan) return;
+  const rows = orientedRows(sheet, spreadsheetPlan.orientation);
+  const axis = spreadsheetPlan.orientation === "columns" ? "Column" : "Row";
+  elements.headerAxisLabel.textContent = `Field names are in`;
+  elements.dataAxisLabel.textContent = `First label is in`;
+  const rowOptions = rows.slice(0, 100).map((row, index) => ({
+    value: index,
+    label: `${axis} ${index + 1}${rowSummary(row) ? ` · ${rowSummary(row)}` : " · empty"}`
+  }));
+  replaceOptions(elements.headerRowSelect, [
+    { value: -1, label: `No header ${axis.toLowerCase()}` },
+    ...rowOptions
+  ], spreadsheetPlan.headerRowIndex);
+  replaceOptions(elements.firstDataRowSelect, rowOptions, spreadsheetPlan.firstDataRowIndex);
+  document.querySelectorAll("[data-import-orientation]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.importOrientation === spreadsheetPlan.orientation);
+  });
+  elements.spreadsheetDimensions.textContent = `${sheet.rows.length} rows · ${sheet.rows.reduce((maximum, row) => Math.max(maximum, row.length), 0)} columns`;
+  renderSpreadsheetMapping();
+}
+
+function useImportedWorkbook(workbook) {
+  importedWorkbook = workbook;
+  importedSheetIndex = 0;
+  spreadsheetPlan = createImportPlan(activeWorkbookSheet());
+  elements.spreadsheetFileName.textContent = workbook.sourceName;
+  replaceOptions(elements.workbookSheetSelect, workbook.sheets.map((sheet, index) => ({ value: index, label: sheet.name })), 0);
+  elements.spreadsheetChooser.classList.add("hidden");
+  elements.spreadsheetSetup.classList.remove("hidden");
+  renderSpreadsheetStructure();
+}
+
+function resetSpreadsheetImport() {
+  importedWorkbook = null;
+  importedSheetIndex = 0;
+  spreadsheetPlan = null;
+  spreadsheetLabels = [];
+  elements.spreadsheetInput.value = "";
+  elements.googleSheetUrl.value = "";
+  setGoogleSheetImporterExpanded(false);
+  elements.spreadsheetChooser.classList.remove("hidden");
+  elements.spreadsheetSetup.classList.add("hidden");
+  elements.columnMapping.replaceChildren();
+  elements.importPreviewList.replaceChildren();
+  elements.confirmImportButton.disabled = true;
+  elements.confirmImportLabel.textContent = "Add labels";
+}
+
+async function loadSpreadsheetFile(file) {
+  elements.importMessage.textContent = "Reading spreadsheet…";
+  elements.confirmImportButton.disabled = true;
+  try {
+    useImportedWorkbook(await readSpreadsheetFile(file));
+    elements.importMessage.textContent = "";
+  } catch (error) {
+    elements.importMessage.textContent = error.message || "That spreadsheet could not be read.";
+  }
+}
+
+const GOOGLE_SHEET_DOWNLOAD_MESSAGE = "Labeloo couldn’t download that sheet. In Google Sheets, choose Share → General access → Anyone with the link (Viewer), then try again. If it’s already shared, check your connection.";
+
+async function loadGoogleSheet() {
+  elements.importMessage.textContent = "";
+  try {
+    const exportUrl = googleSheetExportUrl(elements.googleSheetUrl.value);
+    if (globalThis.chrome?.permissions?.request) {
+      const granted = await chrome.permissions.request({ origins: ["https://docs.google.com/*"] });
+      if (!granted) throw new Error("Google Sheets access was not granted.");
+    }
+    elements.googleSheetButton.disabled = true;
+    elements.importMessage.textContent = "Loading Google Sheet…";
+    const response = await fetch(exportUrl, { credentials: "omit", redirect: "follow" });
+    if (!response.ok) throw new Error(GOOGLE_SHEET_DOWNLOAD_MESSAGE);
+    const contentType = response.headers.get("content-type") || "";
+    if (/text\/html/i.test(contentType)) throw new Error(GOOGLE_SHEET_DOWNLOAD_MESSAGE);
+    useImportedWorkbook(readSpreadsheetBytes(await response.arrayBuffer(), "Google Sheet.xlsx"));
+    elements.importMessage.textContent = "";
+  } catch (error) {
+    const message = error?.message || "";
+    elements.importMessage.textContent = /failed to fetch|networkerror|load failed/i.test(message)
+      ? GOOGLE_SHEET_DOWNLOAD_MESSAGE
+      : message || "That Google Sheet could not be loaded.";
+  } finally {
+    elements.googleSheetButton.disabled = false;
+  }
+}
+
+function showAccountDialog(message = "") {
+  renderAccount();
+  setAccountMessage(message);
+  elements.accountDialog.showModal();
+}
+
+async function loadPrivateGoogleSheet() {
+  if (!account.user) {
+    elements.importDialog.close();
+    showAccountDialog("Sign in with Wiplash.ai, then return here to choose a private Google Sheet.");
+    return;
+  }
+  const extensionApp = /^(?:chrome|moz)-extension:$/.test(location.protocol);
+  const preparedWindow = extensionApp ? null : window.open("about:blank", "labeloo-google-drive");
+  if (preparedWindow) {
+    preparedWindow.document.title = "Opening Google Drive…";
+    preparedWindow.document.body.textContent = "Opening Google Drive…";
+  }
+  elements.googleDriveButton.disabled = true;
+  elements.importMessage.textContent = "Connecting to Google Drive…";
+  try {
+    const workbook = await chooseGoogleDriveSheet(account, {
+      preparedWindow,
+      onStatus: (message) => { elements.importMessage.textContent = message; },
+    });
+    useImportedWorkbook(readSpreadsheetBytes(workbook.bytes, workbook.sourceName));
+    elements.importMessage.textContent = "";
+  } catch (error) {
+    if (preparedWindow && !preparedWindow.closed) preparedWindow.close();
+    elements.importMessage.textContent = error?.name === "AbortError"
+      ? "Google Drive selection was cancelled."
+      : error?.message || "That Google Sheet could not be loaded from Drive.";
+  } finally {
+    renderAccount();
+  }
 }
 
 async function importLabels() {
   elements.importMessage.textContent = "";
   try {
-    const labels = activeImportTab === "csv" ? parseCsv(csvText) : parseAddressBlocks(elements.pasteInput.value);
+    const labels = activeImportTab === "spreadsheet" ? spreadsheetLabels : parseAddressBlocks(elements.pasteInput.value);
     if (!labels.length) throw new Error("Add at least one complete address.");
     labels.forEach((label) => applySheetTypography(label));
-    currentLabels().push(...labels);
-    state.selectedId = labels[0].id;
-    currentSheet().activePage = labelPosition(currentLabels().length - labels.length, currentSheet().startSlot, currentSheet().templateId).sheet;
+    const inserted = insertLabelsIntoBlankSlots(currentLabels(), labels);
+    state.selectedId = inserted[0].label.id;
+    currentSheet().activePage = labelPosition(inserted[0].index, currentSheet().startSlot, currentSheet().templateId).sheet;
     elements.importDialog.close();
     elements.pasteInput.value = "";
-    elements.csvInput.value = "";
-    elements.csvFileName.textContent = "";
-    csvText = "";
+    resetSpreadsheetImport();
     render();
     scheduleSave();
     showToast(`${labels.length} label${labels.length === 1 ? "" : "s"} added`);
@@ -884,38 +1253,23 @@ window.addEventListener("afterprint", () => {
   elements.printPortal.replaceChildren();
   elements.printPortal.setAttribute("aria-hidden", "true");
 });
-elements.accountButton.addEventListener("click", () => {
-  renderAccount();
-  setAccountMessage("");
-  elements.accountDialog.showModal();
-});
+elements.accountButton.addEventListener("click", () => showAccountDialog());
 elements.closeAccountButton.addEventListener("click", () => elements.accountDialog.close());
-document.querySelectorAll("[data-account-mode]").forEach((button) => button.addEventListener("click", () => {
-  accountMode = button.dataset.accountMode;
-  document.querySelectorAll("[data-account-mode]").forEach((item) => item.classList.toggle("selected", item === button));
-  elements.accountNameField.classList.toggle("hidden", accountMode !== "register");
-  elements.accountSubmit.textContent = accountMode === "register" ? "Create account" : "Sign in";
-  elements.accountPassword.autocomplete = accountMode === "register" ? "new-password" : "current-password";
-}));
 elements.accountSubmit.addEventListener("click", async () => {
-  setAccountMessage("Connecting…");
+  setAccountMessage("Opening Wiplash.ai…");
   elements.accountSubmit.disabled = true;
   try {
-    account = await authenticate(account, accountMode, {
-      email: elements.accountEmail.value,
-      password: elements.accountPassword.value,
-      ...(accountMode === "register" ? { name: elements.accountName.value } : {})
-    });
+    account = await signIn(account, (message) => setAccountMessage(message));
+    accountReady = true;
     renderAccount();
-    await syncToCloud();
-    showToast("Cloud sync connected");
+    if (account.user) showToast("Wiplash.ai account connected");
   } catch (error) {
     setAccountMessage(error.message, true);
   } finally {
     elements.accountSubmit.disabled = false;
   }
 });
-elements.syncNowButton.addEventListener("click", () => syncToCloud());
+elements.syncNowButton.addEventListener("click", () => syncToCloud(false, true));
 elements.logoutButton.addEventListener("click", async () => {
   account = await logout(account);
   renderAccount();
@@ -925,15 +1279,16 @@ elements.logoutButton.addEventListener("click", async () => {
 });
 elements.useCloudButton.addEventListener("click", async () => {
   try {
-    state = sanitizeWorkspace(await pullWorkspace(account));
-    account = await loadAccount();
+    const cloud = await pullWorkspace(account);
+    state = sanitizeWorkspace(cloud.workspace);
+    account = cloud.account;
     await saveWorkspace(state);
     render();
     renderAccount();
     showToast("Cloud copy loaded");
   } catch (error) { setAccountMessage(error.message, true); }
 });
-elements.keepLocalButton.addEventListener("click", () => syncToCloud(true));
+elements.keepLocalButton.addEventListener("click", () => syncToCloud(true, true));
 elements.searchInput.addEventListener("input", renderList);
 elements.sheetSelect.addEventListener("change", () => switchSheet(elements.sheetSelect.value));
 elements.addSheetButton.addEventListener("click", () => openSheetDialog("create"));
@@ -1056,11 +1411,60 @@ elements.alignmentControl.addEventListener("click", (event) => {
   render();
   scheduleSave();
 });
-document.querySelectorAll("[data-import-tab]").forEach((button) => button.addEventListener("click", () => setImportTab(button.dataset.importTab)));
-elements.csvInput.addEventListener("change", async () => {
-  const file = elements.csvInput.files?.[0];
-  csvText = file ? await file.text() : "";
-  elements.csvFileName.textContent = file ? `${file.name} · ${Math.max(1, Math.round(file.size / 1024))} KB` : "";
+const importTabButtons = [...document.querySelectorAll("[data-import-tab]")];
+importTabButtons.forEach((button, index) => {
+  button.addEventListener("click", () => setImportTab(button.dataset.importTab));
+  button.addEventListener("keydown", (event) => {
+    let nextIndex;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (index + 1) % importTabButtons.length;
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (index - 1 + importTabButtons.length) % importTabButtons.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = importTabButtons.length - 1;
+    if (nextIndex === undefined) return;
+    event.preventDefault();
+    const nextButton = importTabButtons[nextIndex];
+    setImportTab(nextButton.dataset.importTab);
+    nextButton.focus();
+  });
+});
+elements.spreadsheetInput.addEventListener("change", () => {
+  const file = elements.spreadsheetInput.files?.[0];
+  if (file) loadSpreadsheetFile(file);
+});
+elements.googleSheetToggle.addEventListener("click", () => {
+  setGoogleSheetImporterExpanded(elements.googleSheetToggle.getAttribute("aria-expanded") !== "true");
+});
+elements.googleDriveButton.addEventListener("click", loadPrivateGoogleSheet);
+elements.googleSheetButton.addEventListener("click", loadGoogleSheet);
+elements.googleSheetUrl.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  loadGoogleSheet();
+});
+elements.replaceSpreadsheetButton.addEventListener("click", resetSpreadsheetImport);
+elements.workbookSheetSelect.addEventListener("change", () => {
+  importedSheetIndex = Number(elements.workbookSheetSelect.value) || 0;
+  spreadsheetPlan = createImportPlan(activeWorkbookSheet());
+  renderSpreadsheetStructure();
+});
+document.querySelectorAll("[data-import-orientation]").forEach((button) => {
+  button.addEventListener("click", () => {
+    spreadsheetPlan = createImportPlan(activeWorkbookSheet(), button.dataset.importOrientation);
+    renderSpreadsheetStructure();
+  });
+});
+elements.headerRowSelect.addEventListener("change", () => {
+  const rows = orientedRows(activeWorkbookSheet(), spreadsheetPlan.orientation);
+  spreadsheetPlan.headerRowIndex = Number(elements.headerRowSelect.value);
+  if (spreadsheetPlan.headerRowIndex >= spreadsheetPlan.firstDataRowIndex) {
+    spreadsheetPlan.firstDataRowIndex = Math.min(rows.length - 1, spreadsheetPlan.headerRowIndex + 1);
+  }
+  spreadsheetPlan.mapping = autoMapping(rows, spreadsheetPlan.headerRowIndex, spreadsheetPlan.firstDataRowIndex);
+  renderSpreadsheetStructure();
+});
+elements.firstDataRowSelect.addEventListener("change", () => {
+  spreadsheetPlan.firstDataRowIndex = Number(elements.firstDataRowSelect.value) || 0;
+  renderSpreadsheetMapping();
 });
 
 window.addEventListener("beforeunload", () => {
@@ -1083,3 +1487,12 @@ document.addEventListener("keydown", (event) => {
 render();
 renderAccount();
 scheduleSave();
+refreshAccount(account).then((nextAccount) => {
+  account = nextAccount;
+  accountReady = true;
+  renderAccount();
+  if (account.user && account.syncEnabled) scheduleSave();
+}).catch(() => {
+  accountReady = true;
+  renderAccount();
+});

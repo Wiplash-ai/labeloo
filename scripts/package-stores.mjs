@@ -17,4 +17,27 @@ for (const browser of ["chrome", "edge", "opera", "firefox"]) {
   if (result.status !== 0) process.exit(result.status || 1);
 }
 
+const firefoxSource = spawnSync(
+  "zip",
+  [
+    "-qr",
+    join(artifacts, `labeloo-firefox-source-${version}.zip`),
+    "background.js",
+    "manifest.json",
+    "package.json",
+    "package-lock.json",
+    "src",
+    "scripts",
+    "tests",
+    "docs",
+    "README.md",
+    "PRIVACY.md",
+    "SECURITY.md",
+    "THIRD_PARTY_NOTICES.md",
+    "LICENSE"
+  ],
+  { cwd: root, stdio: "inherit" }
+);
+if (firefoxSource.status !== 0) process.exit(firefoxSource.status || 1);
+
 console.log(`Store packages written to ${artifacts}`);

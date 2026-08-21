@@ -11,7 +11,7 @@ print them on common rectangular US Letter label stock.
 ## Features
 
 - Browser context-menu capture for selected addresses.
-- Quick-add extension popup with label-type selection.
+- Toolbar button opens the full workbench directly and reuses an empty new tab.
 - Exact previews for 13 common rectangular address, shipping, return-address,
   full-sheet, half-sheet, and name-badge stock families.
 - Compatible layouts for Avery 5126, 5160, 5161, 5162, 5163, 5164, 5165,
@@ -24,17 +24,32 @@ print them on common rectangular US Letter label stock.
   and confirm before replacing existing content.
 - Zoom the sheet directly with the mouse wheel while the pointer is over the
   print preview.
-- Paste address blocks or import CSV files with flexible column names.
+- Paste address blocks or import Excel, Apple Numbers, LibreOffice Calc, CSV,
+  TSV, and text spreadsheets.
+- Import public or anyone-with-link Google Sheets with an optional, user-granted
+  Google Sheets permission.
+- Signed-in users can choose one private Google Sheet from My Google Drive. The
+  chooser uses per-file authorization rather than blanket Drive access.
+- Choose a workbook sheet, switch row/column orientation, select header and
+  first-data rows, map source columns to label fields, and preview labels before
+  importing.
+- Fill existing blank label records before appending imported rows.
+- Flag repeated printed text with red sheet references and direct links between
+  duplicate labels in the editor.
 - Browser-local auto-save and CSV export.
-- Optional Labeloo account and revision-safe cross-device project sync.
+- Wiplash.ai single sign-on shared with VideoStitch and GlassWare.
+- Optional, explicitly enabled, revision-safe cross-device project sync.
 - Print at 100% scale or use the browser's Save as PDF command.
 - Chrome, Edge, Opera, Firefox, and standalone web builds.
 
-Labeloo is local-first and works without an account. Label content is sent to
-Wiplash only when a user explicitly signs in and enables project sync. Sync
-keeps projects available across supported browsers and devices and detects
-revision conflicts before overwriting a newer copy. Labeloo has no analytics
-or advertising.
+Labeloo is local-first and works without an account. Wiplash.ai sign-in alone
+does not upload the current project. Label content is sent to Wiplash only when
+the user separately enables project sync. Sync keeps projects available across
+supported browsers and devices and detects revision conflicts before
+overwriting a newer copy. Private Drive import is another separate action: the
+user chooses one Google Sheet, Wiplash transfers that workbook to Labeloo once,
+and no Google token is returned to the app. Labeloo has no analytics or
+advertising.
 
 ## Development
 
@@ -67,7 +82,21 @@ npm run package:stores
 - `storage` keeps the current project and pending selected address locally.
 - `contextMenus` adds “Add selection to Labeloo” when text is selected.
 - Sync service access is an optional host permission requested only when a user
-  signs in. Editing, importing, exporting, and printing do not require it.
+  signs in through `auth.wiplash.ai`. Editing, importing shared links,
+  exporting, and printing do not require it.
+- `docs.google.com` access is optional and requested only when a user chooses
+  to import a shared Google Sheet. Uploaded spreadsheet files are read locally.
+- My Google Drive is available only after Wiplash.ai sign-in. Google separately
+  asks the user to choose one sheet through the narrow `drive.file` scope.
+
+The browser client does not receive Keycloak or Google provider tokens. See
+[Account and Google Drive architecture](docs/ACCOUNT_AND_GOOGLE_DRIVE.md) for
+the public/private boundary and production prerequisites.
+
+Labeloo v0.5 replaces the earlier Labeloo-only password session with Wiplash.ai
+SSO. Local labels are preserved. Legacy cloud projects are not silently copied
+into the new account; a deliberate migration tool is still required before the
+legacy account service can be retired.
 
 Address labels manufactured by Avery are referenced solely for compatibility.
 Labeloo is not affiliated with or endorsed by Avery Products Corporation.

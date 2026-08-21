@@ -28,7 +28,7 @@ async function bundle(entry, outfile) {
   });
 }
 
-async function buildSurface(outputDir, includePopup = false) {
+async function buildSurface(outputDir, includeExtensionRuntime = false) {
   await mkdir(outputDir, { recursive: true });
   await bundle(join(src, "app.js"), join(outputDir, "app.js"));
   await bundle(join(src, "print.js"), join(outputDir, "print.js"));
@@ -37,10 +37,7 @@ async function buildSurface(outputDir, includePopup = false) {
   await copyFile(join(src, "print.html"), join(outputDir, "print.html"));
   await copyFile(join(src, "print.css"), join(outputDir, "print.css"));
   await cp(join(src, "assets"), join(outputDir, "assets"), { recursive: true });
-  if (includePopup) {
-    await bundle(join(src, "popup.js"), join(outputDir, "popup.js"));
-    await copyFile(join(src, "popup.html"), join(outputDir, "popup.html"));
-    await copyFile(join(src, "popup.css"), join(outputDir, "popup.css"));
+  if (includeExtensionRuntime) {
     await copyFile(join(root, "background.js"), join(outputDir, "background.js"));
   }
 }

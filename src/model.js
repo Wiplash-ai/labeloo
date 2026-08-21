@@ -205,6 +205,55 @@ export function labelHasContent(label) {
   return labelLines(label).some((line) => line.trim());
 }
 
+export function insertLabelsIntoBlankSlots(labels, incomingLabels) {
+  const inserted = [];
+  let searchFrom = 0;
+  for (const incoming of incomingLabels) {
+    let blankIndex = -1;
+    for (let index = searchFrom; index < labels.length; index += 1) {
+      if (!labelHasContent(labels[index])) {
+        blankIndex = index;
+        break;
+      }
+    }
+    if (blankIndex >= 0) {
+      const replacement = blankLabel({ ...incoming, id: labels[blankIndex].id });
+      labels[blankIndex] = replacement;
+      inserted.push({ label: replacement, index: blankIndex });
+      searchFrom = blankIndex + 1;
+    } else {
+      labels.push(incoming);
+      inserted.push({ label: incoming, index: labels.length - 1 });
+      searchFrom = labels.length;
+    }
+  }
+  return inserted;
+}
+
+function duplicateTextKey(label) {
+  return labelLines(label)
+    .map((line) => line.trim().replace(/\s+/g, " ").toLocaleLowerCase())
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function duplicateLabelGroups(labels) {
+  const groupsByText = new Map();
+  labels.forEach((label, index) => {
+    const key = duplicateTextKey(label);
+    if (!key) return;
+    const group = groupsByText.get(key) || [];
+    group.push(index);
+    groupsByText.set(key, group);
+  });
+  const references = new Map();
+  groupsByText.forEach((indexes) => {
+    if (indexes.length < 2) return;
+    indexes.forEach((index) => references.set(labels[index].id, indexes.filter((otherIndex) => otherIndex !== index)));
+  });
+  return references;
+}
+
 export function validateLabel(label) {
   const errors = {};
   if (label.type === "name") {

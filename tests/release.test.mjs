@@ -9,10 +9,20 @@ test("manifest uses MV3 and requests sync hosts only when the user opts in", asy
   const packageMetadata = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.version, packageMetadata.version);
-  assert.equal(manifest.version, "0.4.3");
+  assert.equal(manifest.version, "0.5.0");
   assert.deepEqual(manifest.permissions.sort(), ["contextMenus", "storage"]);
   assert.equal(manifest.host_permissions, undefined);
-  assert.deepEqual(manifest.optional_host_permissions, ["https://labs.wiplash.ai/*"]);
+  assert.deepEqual(manifest.optional_host_permissions, ["https://auth.wiplash.ai/*", "https://docs.google.com/*"]);
+  assert.equal(manifest.action.default_popup, undefined);
+});
+
+test("toolbar clicks open the editor directly and reuse a browser new tab", async () => {
+  const background = await readFile(new URL("background.js", root), "utf8");
+  assert.match(background, /chrome\.action\.onClicked\.addListener/);
+  assert.match(background, /chrome:\/\/newtab\//);
+  assert.match(background, /chrome\.tabs\.update\(tab\.id, \{ url \}\)/);
+  assert.match(background, /chrome\.tabs\.create/);
+  assert.doesNotMatch(background, /labeloo:open-editor/);
 });
 
 test("the main sheet editor exposes mouse-wheel zoom with visible feedback", async () => {
@@ -25,13 +35,15 @@ test("the main sheet editor exposes mouse-wheel zoom with visible feedback", asy
   assert.match(appSource, /requestAnimationFrame/);
 });
 
-test("runtime has no analytics and contains an explicit optional sync client", async () => {
-  const paths = ["background.js", "src/app.html", "src/app.js", "src/popup.js", "src/storage.js", "src/sync.js"];
+test("runtime has no analytics and contains explicit optional Wiplash sync", async () => {
+  const paths = ["background.js", "src/app.html", "src/app.js", "src/storage.js", "src/sync.js"];
   const source = (await Promise.all(paths.map((path) => readFile(new URL(path, root), "utf8")))).join("\n");
   assert.doesNotMatch(source, /google-analytics|mixpanel|segment\.io|XMLHttpRequest/i);
-  assert.match(source, /optional cloud sync/i);
+  assert.match(source, /Wiplash single sign-on/i);
   assert.match(source, /chrome\.permissions\.request/);
   assert.match(source, /data_collection/);
+  assert.match(source, /Continue with Wiplash\.ai/);
+  assert.doesNotMatch(source, /\/auth\/(?:login|register)/);
 });
 
 test("Firefox declares optional cloud-sync data collection", async () => {
@@ -94,6 +106,43 @@ test("all dialogs close when their backdrop is clicked", async () => {
   const source = await readFile(new URL("src/app.js", root), "utf8");
   assert.match(source, /document\.querySelectorAll\("dialog"\)\.forEach/);
   assert.match(source, /if \(event\.target === dialog\) dialog\.close\(\)/);
+});
+
+test("imports reveal Google Sheets on demand and duplicate references navigate between labels", async () => {
+  const html = await readFile(new URL("src/app.html", root), "utf8");
+  const css = await readFile(new URL("src/app.css", root), "utf8");
+  const source = `${await readFile(new URL("src/app.js", root), "utf8")}\n${await readFile(new URL("src/sync.js", root), "utf8")}`;
+  assert.match(html, /id="googleSheetToggle"[^>]+aria-expanded="false"/);
+  assert.match(html, /id="googleSheetImport" class="google-sheet-import hidden"/);
+  assert.match(html, /Google sign-in does not give Labeloo access/);
+  assert.match(html, /Share → General access → Anyone with the link \(Viewer\)/);
+  assert.match(html, /id="googleDriveButton"/);
+  assert.match(html, /Sign in to use My Drive/);
+  assert.match(source, /chooseGoogleDriveSheet/);
+  assert.match(source, /Sign in with Wiplash\.ai before choosing a private Google Sheet/);
+  assert.match(html, /id="importMessage"[^>]+role="status"[^>]+aria-live="polite"/);
+  assert.match(html, /id="duplicateSummary"/);
+  assert.match(source, /insertLabelsIntoBlankSlots\(currentLabels\(\), labels\)/);
+  assert.match(source, /duplicateLabelGroups\(sheet\.labels\)/);
+  assert.match(source, /link\.addEventListener\("click", \(\) => selectLabel\(duplicate\.id\)\)/);
+  assert.match(source, /GOOGLE_SHEET_DOWNLOAD_MESSAGE/);
+  assert.match(source, /failed to fetch\|networkerror\|load failed/i);
+  assert.match(css, /\.slot-number\.duplicate-reference/);
+  assert.match(css, /\.google-sheet-trigger\s*\{/);
+});
+
+test("spreadsheet import tabs and file chooser expose keyboard-accessible state", async () => {
+  const html = await readFile(new URL("src/app.html", root), "utf8");
+  const css = await readFile(new URL("src/app.css", root), "utf8");
+  const source = await readFile(new URL("src/app.js", root), "utf8");
+  assert.match(html, /id="pasteImportTab"[^>]+role="tab"[^>]+aria-selected="true"[^>]+aria-controls="pastePanel"/);
+  assert.match(html, /id="spreadsheetImportTab"[^>]+role="tab"[^>]+aria-selected="false"[^>]+aria-controls="spreadsheetPanel"/);
+  assert.match(html, /id="pastePanel"[^>]+role="tabpanel"[^>]+aria-labelledby="pasteImportTab"/);
+  assert.match(html, /id="spreadsheetPanel"[^>]+role="tabpanel"[^>]+aria-labelledby="spreadsheetImportTab"/);
+  assert.match(source, /button\.setAttribute\("aria-selected", String\(selected\)\)/);
+  assert.match(source, /event\.key === "ArrowRight"/);
+  assert.match(source, /event\.key === "Home"/);
+  assert.match(css, /\.file-drop:focus-within\s*{[^}]*outline:/i);
 });
 
 test("product page demonstrates and documents the full stock catalog", async () => {

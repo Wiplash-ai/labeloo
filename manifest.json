@@ -2,16 +2,15 @@
   "manifest_version": 3,
   "name": "Address & Shipping Label Maker - Labeloo",
   "short_name": "Labeloo",
-  "version": "0.4.3",
-  "description": "Create and print address, shipping, name badge, and custom labels from text, CSV, or Excel on Avery-compatible US Letter sheets.",
+  "version": "0.5.0",
+  "description": "Create and print address, shipping, name badge, and custom labels from text or spreadsheets on Avery-compatible US Letter sheets.",
   "permissions": ["storage", "contextMenus"],
-  "optional_host_permissions": ["https://labs.wiplash.ai/*"],
+  "optional_host_permissions": ["https://auth.wiplash.ai/*", "https://docs.google.com/*"],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_title": "Open Labeloo",
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "assets/icons/icon16.png",
       "32": "assets/icons/icon32.png"

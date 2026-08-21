@@ -6,6 +6,8 @@ import {
   activeSheet,
   blankLabel,
   blankSheet,
+  duplicateLabelGroups,
+  insertLabelsIntoBlankSlots,
   labelLines,
   labelHasContent,
   labelPosition,
@@ -136,4 +138,33 @@ test("label content detection distinguishes editable blank slots from populated 
   assert.equal(labelHasContent(blankLabel({ type: "address" })), false);
   assert.equal(labelHasContent(blankLabel({ type: "address", name: "Jordan" })), true);
   assert.equal(labelHasContent(blankLabel({ type: "custom", customText: "FRAGILE" })), true);
+});
+
+test("imports populate editable blank slots before appending labels", () => {
+  const firstBlank = blankLabel({ type: "address" });
+  const existing = [firstBlank, blankLabel({ name: "Already here" })];
+  const imported = [
+    blankLabel({ name: "Alex Rivera", address1: "123 Splash Lane" }),
+    blankLabel({ name: "Sam Lee", address1: "8 Oak Road" })
+  ];
+  const inserted = insertLabelsIntoBlankSlots(existing, imported);
+  assert.equal(existing.length, 3);
+  assert.equal(existing[0].id, firstBlank.id);
+  assert.equal(existing[0].name, "Alex Rivera");
+  assert.equal(existing[2].name, "Sam Lee");
+  assert.deepEqual(inserted.map(({ index }) => index), [0, 2]);
+});
+
+test("duplicate groups compare rendered text while ignoring case and extra spacing", () => {
+  const labels = [
+    blankLabel({ name: "Alex Rivera", address1: "123 Splash Lane", city: "Austin", state: "TX", postal: "78701" }),
+    blankLabel({ name: "Other Person", address1: "9 Main St" }),
+    blankLabel({ name: " alex   rivera ", address1: "123 splash lane", city: "AUSTIN", state: "tx", postal: "78701" }),
+    blankLabel()
+  ];
+  const groups = duplicateLabelGroups(labels);
+  assert.deepEqual(groups.get(labels[0].id), [2]);
+  assert.deepEqual(groups.get(labels[2].id), [0]);
+  assert.equal(groups.has(labels[1].id), false);
+  assert.equal(groups.has(labels[3].id), false);
 });

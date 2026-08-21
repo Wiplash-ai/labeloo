@@ -15,18 +15,29 @@ any ordinary webpage directly into the current Labeloo sheet.
 - Add, edit, duplicate, reorder, and remove labels.
 - Start printing at any position supported by the selected stock so partially used sheets can
   be reused.
-- Import pasted address blocks and CSV files.
+- Import pasted address blocks, Excel workbooks, Apple Numbers files,
+  LibreOffice Calc files, CSV, TSV, and text lists through a field-mapping
+  workbench with sheet, orientation, header, data-start, and preview controls.
+- Import public or anyone-with-link Google Sheets after a user explicitly grants
+  the optional Google Sheets host permission.
+- Let Wiplash.ai-signed-in users choose one private Google Sheet with Google's
+  per-file Picker authorization; do not request broad Drive access.
+- Reuse editable blank records during import and flag duplicate printed text with
+  proofing references that link matching labels in the editor.
 - Capture selected webpage text from the browser context menu.
 - Auto-save projects in browser storage.
 - Export project data as CSV.
 - Print with exact physical dimensions or use the browser's Save as PDF flow.
 - Chrome, Edge, Opera, and Firefox packaging.
-- Optional account-based, revision-safe project sync across browsers.
+- Wiplash.ai single sign-on and separately enabled, revision-safe project sync
+  across browsers.
 - Commercial import and PDF-rendering API using the same 13-template catalog.
 
 ## Product Boundaries
 
 - No account is required for local editing, importing, exporting, or printing.
+- Signing in does not automatically enable cloud project sync or authorize
+  Google Drive.
 - No analytics, advertising, remote fonts, or CDN in the editor.
 - No address validation or postal-service API in V1.
 - No shipping-label purchase or postage generation.
@@ -35,7 +46,7 @@ any ordinary webpage directly into the current Labeloo sheet.
 
 ## Next Version Backlog
 
-Labeloo v0.5.0 targets non-standard stock: square, round, oval, and business
+Labeloo v0.6.0 targets non-standard stock: square, round, oval, and business
 card layouts. Each layout must pass geometry, browser PDF, and physical print
 calibration before it is advertised as supported.
 

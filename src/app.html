@@ -148,6 +148,10 @@
                 </select>
               </label>
               <div id="validationSummary" class="validation-summary field--wide" role="status"></div>
+              <div id="duplicateSummary" class="duplicate-summary field--wide hidden" role="status">
+                <span class="duplicate-summary__reference">!</span>
+                <span><strong>Duplicate label text</strong><small>Same printed text as <span id="duplicateLinks"></span>.</small></span>
+              </div>
 
               <label class="field field--wide" data-label-types="address name email">
                 <span>Name or organization</span>
@@ -242,32 +246,102 @@
         </header>
 
         <div class="import-tabs" role="tablist">
-          <button type="button" class="selected" data-import-tab="paste">Paste addresses</button>
-          <button type="button" data-import-tab="csv">Upload CSV</button>
+          <button id="pasteImportTab" type="button" class="selected" role="tab" aria-selected="true" aria-controls="pastePanel" tabindex="0" data-import-tab="paste">Paste addresses</button>
+          <button id="spreadsheetImportTab" type="button" role="tab" aria-selected="false" aria-controls="spreadsheetPanel" tabindex="-1" data-import-tab="spreadsheet">Import spreadsheet</button>
         </div>
 
-        <section id="pastePanel" class="import-panel">
+        <section id="pastePanel" class="import-panel" role="tabpanel" aria-labelledby="pasteImportTab">
           <label class="field field--wide">
             <span>Separate labels with a blank line</span>
             <textarea id="pasteInput" rows="12" placeholder="Alex Rivera&#10;123 Splash Lane&#10;Fort Worth, TX 76102&#10;&#10;Wiplash Labs&#10;44 Signal Street, Suite 8&#10;Austin, TX 78701"></textarea>
           </label>
         </section>
 
-        <section id="csvPanel" class="import-panel hidden">
-          <label class="file-drop" for="csvInput">
-            <i data-lucide="file-spreadsheet"></i>
-            <strong>Choose a CSV file</strong>
-            <span>Type, name, email, custom text, and address columns are detected automatically.</span>
-            <input id="csvInput" type="file" accept=".csv,text/csv">
-          </label>
-          <p id="csvFileName" class="file-name"></p>
+        <section id="spreadsheetPanel" class="import-panel import-panel--spreadsheet hidden" role="tabpanel" aria-labelledby="spreadsheetImportTab">
+          <div id="spreadsheetChooser" class="spreadsheet-chooser">
+            <label class="file-drop" for="spreadsheetInput">
+              <i data-lucide="file-spreadsheet"></i>
+              <strong>Choose a spreadsheet</strong>
+              <span>Excel, Apple Numbers, LibreOffice Calc, CSV, TSV, and text files stay in this browser.</span>
+              <span class="format-list">XLSX · XLS · XLSM · XLSB · NUMBERS · ODS · FODS · CSV · TSV · TXT</span>
+              <input id="spreadsheetInput" type="file" accept=".xlsx,.xls,.xlsm,.xlsb,.numbers,.ods,.fods,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/csv,text/tab-separated-values,text/plain">
+            </label>
+
+            <div class="import-divider"><span>or choose from your account</span></div>
+
+            <section id="googleDriveImport" class="google-drive-choice" aria-labelledby="googleDriveTitle">
+              <span class="google-drive-choice__icon"><i data-lucide="hard-drive"></i></span>
+              <div class="google-drive-choice__copy">
+                <strong id="googleDriveTitle">Choose from My Google Drive</strong>
+                <small id="googleDriveStatus">Sign in with Wiplash.ai to choose one private Google Sheet.</small>
+              </div>
+              <button id="googleDriveButton" class="button button--primary" type="button"><i data-lucide="log-in"></i><span id="googleDriveButtonLabel">Sign in to use My Drive</span></button>
+            </section>
+
+            <div class="import-divider"><span>or bring a shared sheet</span></div>
+
+            <button id="googleSheetToggle" class="google-sheet-trigger" type="button" aria-expanded="false" aria-controls="googleSheetImport">
+              <span class="google-sheet-trigger__icon"><i data-lucide="file-spreadsheet"></i></span>
+              <span class="google-sheet-trigger__copy"><strong>Import a shared Google Sheet</strong><small>Use a public or anyone-with-link spreadsheet without signing in</small></span>
+              <span class="google-sheet-trigger__action">Paste a link <i data-lucide="chevron-down"></i></span>
+            </button>
+
+            <div id="googleSheetImport" class="google-sheet-import hidden">
+              <label class="field field--wide" for="googleSheetUrl">
+                <span>Google Sheets link</span>
+                <input id="googleSheetUrl" type="url" inputmode="url" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off">
+              </label>
+              <button id="googleSheetButton" class="button button--quiet" type="button"><i data-lucide="link-2"></i><span>Load sheet</span></button>
+              <small>Google sign-in does not give Labeloo access. In the sheet, choose Share → General access → Anyone with the link (Viewer), then paste its link here.</small>
+            </div>
+          </div>
+
+          <div id="spreadsheetSetup" class="spreadsheet-setup hidden">
+            <header class="source-summary">
+              <div><span class="eyebrow">Import source</span><strong id="spreadsheetFileName"></strong><small id="spreadsheetDimensions"></small></div>
+              <button id="replaceSpreadsheetButton" class="button button--quiet button--small" type="button">Choose another</button>
+            </header>
+
+            <div class="structure-controls">
+              <label class="field">
+                <span>Sheet or table</span>
+                <select id="workbookSheetSelect"></select>
+              </label>
+              <fieldset class="orientation-control">
+                <legend>Records run in</legend>
+                <div class="segmented-control">
+                  <button type="button" class="selected" data-import-orientation="rows">Rows</button>
+                  <button type="button" data-import-orientation="columns">Columns</button>
+                </div>
+              </fieldset>
+              <label class="field">
+                <span id="headerAxisLabel">Field names are in</span>
+                <select id="headerRowSelect"></select>
+              </label>
+              <label class="field">
+                <span id="dataAxisLabel">First label is on</span>
+                <select id="firstDataRowSelect"></select>
+              </label>
+            </div>
+
+            <div class="mapping-workbench">
+              <section class="mapping-ledger" aria-labelledby="mappingTitle">
+                <header><div><span class="eyebrow">Source → Labeloo</span><h3 id="mappingTitle">Map your fields</h3></div><span id="mappingCount" class="mapping-count"></span></header>
+                <div id="columnMapping" class="column-mapping"></div>
+              </section>
+              <aside class="import-preview" aria-labelledby="importPreviewTitle">
+                <header><div><span class="eyebrow">Before it lands</span><h3 id="importPreviewTitle">Label preview</h3></div><span id="importPreviewCount" class="mapping-count"></span></header>
+                <div id="importPreviewList" class="import-preview-list"></div>
+              </aside>
+            </div>
+          </div>
         </section>
 
         <footer>
-          <span id="importMessage" class="dialog-message"></span>
+          <span id="importMessage" class="dialog-message" role="status" aria-live="polite"></span>
           <div>
             <button class="button button--quiet" value="cancel">Cancel</button>
-            <button id="confirmImportButton" class="button button--primary" type="button"><i data-lucide="plus"></i><span>Add labels</span></button>
+            <button id="confirmImportButton" class="button button--primary" type="button"><i data-lucide="plus"></i><span id="confirmImportLabel">Add labels</span></button>
           </div>
         </footer>
       </form>
@@ -276,26 +350,24 @@
     <dialog id="accountDialog" class="account-dialog">
       <div class="dialog-shell account-shell">
         <header>
-          <div><span class="eyebrow">Optional cloud sync</span><h2 id="accountTitle">Your Labeloo account</h2></div>
+          <div><span class="eyebrow">Wiplash single sign-on</span><h2 id="accountTitle">Your Labeloo account</h2></div>
           <button id="closeAccountButton" class="icon-button" type="button" title="Close" aria-label="Close"><i data-lucide="x"></i></button>
         </header>
         <section id="signedOutAccount" class="account-content">
           <p>Your labels stay in this browser unless you sign in and choose to sync them.</p>
-          <div class="account-tabs" role="tablist">
-            <button type="button" class="selected" data-account-mode="login">Sign in</button>
-            <button type="button" data-account-mode="register">Create account</button>
+          <div class="wiplash-sso-card">
+            <span class="account-avatar"><i data-lucide="cloud"></i></span>
+            <div><strong>One Wiplash.ai account</strong><small>Use the same secure sign-in as VideoStitch and GlassWare. Labeloo never receives your Wiplash or Google password.</small></div>
           </div>
-          <label id="accountNameField" class="field field--wide hidden"><span>Name</span><input id="accountName" type="text" maxlength="100" autocomplete="name"></label>
-          <label class="field field--wide"><span>Email</span><input id="accountEmail" type="email" maxlength="254" autocomplete="email"></label>
-          <label class="field field--wide"><span>Password</span><input id="accountPassword" type="password" minlength="10" maxlength="128" autocomplete="current-password"></label>
-          <p class="sync-benefit"><i data-lucide="refresh-cw"></i><span>Sign in to keep the same sheets on every browser. Local printing and editing still work without an account.</span></p>
-          <button id="accountSubmit" class="button button--primary" type="button">Sign in</button>
+          <p class="sync-benefit"><i data-lucide="refresh-cw"></i><span>Sign in for cross-browser project sync and private Google Drive import. Local editing, uploaded files, printing, and shared-link imports still work without an account.</span></p>
+          <p id="accountMigrationNote" class="account-migration-note hidden">Labeloo now uses Wiplash.ai single sign-on. Your local labels are still here; older Labeloo cloud accounts are not linked automatically.</p>
+          <button id="accountSubmit" class="button button--primary wiplash-signin-button" type="button"><i data-lucide="log-in"></i><span>Continue with Wiplash.ai</span></button>
         </section>
         <section id="signedInAccount" class="account-content hidden">
           <div class="account-identity"><span class="account-avatar"><i data-lucide="cloud"></i></span><div><strong id="accountUserName"></strong><small id="accountUserEmail"></small></div></div>
           <div class="sync-status"><span>Current project</span><strong id="cloudProjectStatus">Ready to sync</strong></div>
           <div id="conflictActions" class="conflict-actions hidden"><p>This project changed on another device. Choose which copy to keep.</p><button id="useCloudButton" class="button button--quiet" type="button">Use cloud copy</button><button id="keepLocalButton" class="button button--primary" type="button">Keep this copy</button></div>
-          <div class="account-actions"><button id="syncNowButton" class="button button--primary" type="button"><i data-lucide="refresh-cw"></i>Sync now</button><button id="logoutButton" class="button button--quiet" type="button">Sign out</button></div>
+          <div class="account-actions"><button id="syncNowButton" class="button button--primary" type="button"><i data-lucide="refresh-cw"></i><span id="syncNowLabel">Enable project sync</span></button><button id="logoutButton" class="button button--quiet" type="button">Sign out</button></div>
         </section>
         <p id="accountMessage" class="dialog-message" role="status"></p>
       </div>
