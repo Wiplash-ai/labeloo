@@ -117,6 +117,10 @@ The next release target is specialty and non-standard stock. See the
 [Specialty Label Template Roadmap](docs/SPECIALTY_TEMPLATE_ROADMAP.md) for the
 verified approach to round, oval, square, card, and nonuniform layouts.
 
+Future spreadsheet-native distribution through Google Workspace, Microsoft
+Excel, Airtable, LibreOffice Calc, ONLYOFFICE, and OpenOffice is documented in
+the [Spreadsheet Add-on Marketplace Research](docs/SPREADSHEET_ADD_ON_MARKETPLACES.md).
+
 ## License
 
 [MIT](LICENSE). Produced by Wiplash.ai.

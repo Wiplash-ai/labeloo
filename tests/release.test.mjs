@@ -167,3 +167,18 @@ test("product page demonstrates and documents the full stock catalog", async () 
   assert.match(roadmap, /Target: Labeloo v0\.5\.0/);
   assert.match(roadmap, /not currently supported layouts/);
 });
+
+test("public account pages disclose Google Drive access and support paths", async () => {
+  const homepage = await readFile(new URL("site/labeloo/index.html", root), "utf8");
+  const privacy = await readFile(new URL("site/labeloo/privacy/index.html", root), "utf8");
+  const support = await readFile(new URL("site/labeloo/support/index.html", root), "utf8");
+  assert.match(homepage, /Signed-in users can choose one private spreadsheet from Google Drive/);
+  assert.match(homepage, /href="support\//);
+  assert.match(homepage, /https:\/\/wiplash\.ai\/legal\/terms/);
+  assert.match(privacy, /Google API Services User Data Policy/);
+  assert.match(privacy, /Limited Use requirements/);
+  assert.match(privacy, /drive\.file/);
+  assert.match(support, /Choose a private Google Sheet/);
+  assert.match(support, /Remove Google access/);
+  assert.match(support, /support@wiplash\.ai/);
+});

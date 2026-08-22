@@ -3,6 +3,35 @@
 Labeloo v0.5 uses the shared Wiplash.ai identity system. Identity, project
 sync, and Google Drive access are deliberately separate decisions.
 
+## Production authorization status
+
+Verified August 21, 2026:
+
+- Google Cloud project: **Labeloo Production** (`labeloo-production`). This is
+  intentionally separate from the shared Wiplash SSO Google project so
+  Labeloo's name, logo, callback, and Drive access cannot rebrand or broaden
+  another Wiplash product.
+- Audience: external and in production.
+- Published branding: **Labeloo**, the Labeloo logo, the public product page,
+  privacy policy, terms, support email, and the authorized `wiplash.ai` domain.
+- Google reports that the branding is verified and being shown to users.
+- Data access: only the non-sensitive
+  `https://www.googleapis.com/auth/drive.file` scope. Google reports that
+  sensitive/restricted-scope verification is not required.
+- API: Google Drive API enabled. OAuth client type: confidential web
+  application. Exact redirect URI:
+  `https://auth.wiplash.ai/labeloo/google-drive/callback`.
+- Live proof: a signed-in production user opened the verified Labeloo consent
+  screen, selected the private **Fundraiser Checks - Names and Addresses -
+  2026-08-20** Google Sheet through Picker, and reached Labeloo's field-mapping
+  screen with 48 rows. The import was canceled before changing the user's
+  current project.
+
+The production account service exposes `googleDrive: true` from its health
+endpoint. Its Google client secret remains only in the private service
+environment; it is not stored in this repository or returned to a Labeloo
+client.
+
 ```text
 Labeloo client
   |-- Wiplash sign-in ------> auth.wiplash.ai/labeloo ---> shared Wiplash realm
