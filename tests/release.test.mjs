@@ -9,7 +9,7 @@ test("manifest uses MV3 and requests sync hosts only when the user opts in", asy
   const packageMetadata = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.version, packageMetadata.version);
-  assert.equal(manifest.version, "0.5.0");
+  assert.equal(manifest.version, "0.5.1");
   assert.deepEqual(manifest.permissions.sort(), ["contextMenus", "identity", "storage"]);
   assert.equal(manifest.permissions.includes("identity.email"), false);
   assert.equal(manifest.host_permissions, undefined);
