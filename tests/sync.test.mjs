@@ -44,6 +44,9 @@ test("Wiplash identity, Drive selection, and project sync remain separate client
   const source = await readFile(new URL("../src/sync.js", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(source, /\/v1\/auth\/device-authorizations/);
+  assert.match(source, /\/v1\/auth\/extension-authorizations/);
+  assert.match(source, /launchWebAuthFlow/);
+  assert.match(source, /error\?\.status === 404 \|\| error\?\.code === "extension_auth_unavailable"/);
   assert.match(source, /\/v1\/google-drive\/authorizations/);
   assert.match(source, /assertNoProviderCredentials/);
   assert.match(app, /account\.syncEnabled && account\.capabilities\.projectSync/);

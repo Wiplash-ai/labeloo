@@ -180,6 +180,7 @@ const elements = Object.fromEntries([
   "googleDriveButton",
   "googleDriveButtonLabel",
   "googleDriveStatus",
+  "googleDriveSwitchButton",
   "spreadsheetSetup",
   "spreadsheetFileName",
   "spreadsheetDimensions",
@@ -350,6 +351,8 @@ function renderAccount() {
   elements.syncNowLabel.textContent = account.syncEnabled ? "Sync now" : "Enable project sync";
   const driveAvailable = signedIn && account.capabilities.googleDrive;
   elements.googleDriveButton.disabled = signedIn && !driveAvailable;
+  elements.googleDriveSwitchButton.classList.toggle("hidden", !driveAvailable);
+  elements.googleDriveSwitchButton.disabled = !driveAvailable;
   elements.googleDriveButtonLabel.textContent = driveAvailable
     ? "Choose a Google Sheet"
     : signedIn ? "My Drive is unavailable" : "Sign in to use My Drive";
@@ -357,7 +360,7 @@ function renderAccount() {
   driveIcon.dataset.lucide = driveAvailable ? "hard-drive" : "log-in";
   elements.googleDriveButton.replaceChildren(driveIcon, elements.googleDriveButtonLabel);
   elements.googleDriveStatus.textContent = driveAvailable
-    ? `Signed in as ${account.user.email}. Google will ask you to choose one sheet; your Drive stays private.`
+    ? `Signed in as ${account.user.email}. Google shows the picker and only asks for access when needed.`
     : signedIn
       ? "Private Google Drive import has not been configured for this Labeloo environment."
       : "Sign in with Wiplash.ai to choose one private Google Sheet.";
@@ -1098,7 +1101,7 @@ function showAccountDialog(message = "") {
   elements.accountDialog.showModal();
 }
 
-async function loadPrivateGoogleSheet() {
+async function loadPrivateGoogleSheet({ chooseAccount = false } = {}) {
   if (!account.user) {
     elements.importDialog.close();
     showAccountDialog("Sign in with Wiplash.ai, then return here to choose a private Google Sheet.");
@@ -1111,10 +1114,12 @@ async function loadPrivateGoogleSheet() {
     preparedWindow.document.body.textContent = "Opening Google Drive…";
   }
   elements.googleDriveButton.disabled = true;
+  elements.googleDriveSwitchButton.disabled = true;
   elements.importMessage.textContent = "Connecting to Google Drive…";
   try {
     const workbook = await chooseGoogleDriveSheet(account, {
       preparedWindow,
+      chooseAccount,
       onStatus: (message) => { elements.importMessage.textContent = message; },
     });
     useImportedWorkbook(readSpreadsheetBytes(workbook.bytes, workbook.sourceName));
@@ -1434,7 +1439,8 @@ elements.spreadsheetInput.addEventListener("change", () => {
 elements.googleSheetToggle.addEventListener("click", () => {
   setGoogleSheetImporterExpanded(elements.googleSheetToggle.getAttribute("aria-expanded") !== "true");
 });
-elements.googleDriveButton.addEventListener("click", loadPrivateGoogleSheet);
+elements.googleDriveButton.addEventListener("click", () => loadPrivateGoogleSheet());
+elements.googleDriveSwitchButton.addEventListener("click", () => loadPrivateGoogleSheet({ chooseAccount: true }));
 elements.googleSheetButton.addEventListener("click", loadGoogleSheet);
 elements.googleSheetUrl.addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;

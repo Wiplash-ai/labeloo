@@ -1446,6 +1446,23 @@ svg {
 .google-drive-choice__copy small { color: #68736f; font-size: 12px; line-height: 1.45; }
 .google-drive-choice .button { white-space: nowrap; }
 
+.google-drive-switch {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--teal-dark);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.google-drive-switch:hover { color: var(--teal); }
+.google-drive-switch:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
 .google-sheet-import {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

@@ -4,7 +4,7 @@
   "short_name": "Labeloo",
   "version": "0.5.0",
   "description": "Create and print address, shipping, name badge, and custom labels from text or spreadsheets on Avery-compatible US Letter sheets.",
-  "permissions": ["storage", "contextMenus"],
+  "permissions": ["storage", "contextMenus", "identity"],
   "optional_host_permissions": ["https://auth.wiplash.ai/*", "https://docs.google.com/*"],
   "background": {
     "service_worker": "background.js"

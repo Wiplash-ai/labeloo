@@ -32,6 +32,23 @@ endpoint. Its Google client secret remains only in the private service
 environment; it is not stored in this repository or returned to a Labeloo
 client.
 
+### Browser callback inventory
+
+Read-only production configuration verified August 22, 2026 currently trusts
+two released Chromium origins. Their browser-owned callbacks are:
+
+- `https://jodjiaiappahikcjdkceffkklnokcigj.chromiumapp.org/`
+- `https://mlpojcfgcnfbkbclgfaibjhfmmfjdjdg.chromiumapp.org/`
+
+Firefox derives its callback by SHA-1 hashing the declared add-on ID
+`labeloo@wiplash.ai`, producing:
+
+- `https://316f52e3a83c77c9b719dfadfdba1e41e2858bfc.extensions.allizom.org/`
+
+These exact URLs belong in `LABELLOO_EXTENSION_REDIRECT_URIS` before the
+seamless flow is enabled in production. Chromium also validates its callback
+against the calling extension origin at runtime.
+
 ```text
 Labeloo client
   |-- Wiplash sign-in ------> auth.wiplash.ai/labeloo ---> shared Wiplash realm
@@ -48,7 +65,10 @@ Labeloo client
 - Project content reaches Wiplash only after the user selects **Enable project
   sync**. Later local edits sync automatically until sign-out.
 - **Choose from My Google Drive** is shown as an account feature. Google then
-  asks the signed-in user to choose exactly one spreadsheet.
+  asks the signed-in user to choose exactly one spreadsheet. Existing Google
+  authorization is reused instead of forcing consent on every import. The user
+  can explicitly select **Switch Google account** to request Google's account
+  chooser.
 - A Google identity used to create a Wiplash account does not automatically
   authorize Google Drive. The Picker consent is always separate.
 
@@ -57,11 +77,17 @@ Labeloo client
 The hosted web app uses a signed, HttpOnly, SameSite session cookie and a CSRF
 token. OIDC authorization-code and PKCE exchanges stay in the private BFF.
 
-Extension origins cannot depend on the hosted web cookie. The extension starts
-a device authorization, opens a normal Wiplash sign-in tab, displays an
-eight-character confirmation code, and exchanges a one-time secret for an
-opaque, server-revocable Labeloo app session. It never receives a Keycloak
-token, social-provider token, or client secret.
+Extension origins cannot depend on the hosted web cookie. Current clients use
+the browser's `identity.launchWebAuthFlow` window with an authorization code,
+state, and S256 PKCE verifier. The browser closes that window when the private
+BFF redirects to the extension-specific callback. The extension exchanges the
+one-time code for an opaque, server-revocable Labeloo app session that lasts 30
+days and survives service restarts in an encrypted server-side store. It never
+receives a Keycloak token, social-provider token, or client secret.
+
+The device authorization and confirmation-code endpoints remain operational
+for already-installed versions and as a staged fallback while a browser's exact
+identity callback is being configured. New clients try the PKCE flow first.
 
 ## Google Drive boundary
 
@@ -87,6 +113,7 @@ under `labeloo-account/`. It owns:
 
 - OIDC code exchange and logout;
 - web cookies, CSRF, and extension device handoff;
+- one-time extension PKCE exchanges and encrypted 30-day session revocation;
 - encrypted, account-isolated project sync;
 - Google OAuth code exchange and selected-workbook export;
 - exact CORS allowlists for hosted web and released extension origins.
@@ -116,8 +143,12 @@ and routed at `https://auth.wiplash.ai/labeloo`.
    location at `https://auth.wiplash.ai/labeloo/`.
 3. Set independent session and AES-256-GCM vault keys. Back up the encrypted
    project volume and document deletion/backup retention.
-4. Add the exact Chrome, Edge, Opera, and Firefox extension origins to
-   `LABELLOO_EXTENSION_ORIGINS`; never use a wildcard.
+4. Add exact stable Chromium extension origins to
+   `LABELLOO_EXTENSION_ORIGINS`; never use a wildcard. Add every released
+   browser value returned by `identity.getRedirectURL()` to
+   `LABELLOO_EXTENSION_REDIRECT_URIS`. Firefox runtime origins vary by install,
+   so its configured browser-owned callback—not the runtime UUID—is the trust
+   anchor for the PKCE flow.
 5. Configure a Google OAuth web client with the exact callback
    `https://auth.wiplash.ai/labeloo/google-drive/callback`, the `drive.file`
    scope, and the required consent-screen disclosures.

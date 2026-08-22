@@ -81,6 +81,9 @@ npm run package:stores
 
 - `storage` keeps the current project and pending selected address locally.
 - `contextMenus` adds “Add selection to Labeloo” when text is selected.
+- `identity` opens the browser-owned Wiplash.ai sign-in window and returns a
+  one-time PKCE code to Labeloo. Labeloo does not request `identity.email` or
+  read the browser profile's account.
 - Sync service access is an optional host permission requested only when a user
   signs in through `auth.wiplash.ai`. Editing, importing shared links,
   exporting, and printing do not require it.
@@ -88,6 +91,8 @@ npm run package:stores
   to import a shared Google Sheet. Uploaded spreadsheet files are read locally.
 - My Google Drive is available only after Wiplash.ai sign-in. Google separately
   asks the user to choose one sheet through the narrow `drive.file` scope.
+  Prior authorization is reused; **Switch Google account** explicitly opens the
+  Google account chooser without forcing the consent screen again.
 
 The browser client does not receive Keycloak or Google provider tokens. See
 [Account and Google Drive architecture](docs/ACCOUNT_AND_GOOGLE_DRIVE.md) for

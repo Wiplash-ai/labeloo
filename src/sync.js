@@ -222,6 +222,69 @@ function delay(milliseconds, signal) {
   });
 }
 
+function base64url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function randomBase64url(length) {
+  const bytes = new Uint8Array(length);
+  globalThis.crypto.getRandomValues(bytes);
+  return base64url(bytes);
+}
+
+async function createExtensionPkce() {
+  const verifier = randomBase64url(64);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return { verifier, challenge: base64url(new Uint8Array(digest)) };
+}
+
+function extensionIdentity() {
+  return globalThis.chrome?.identity || globalThis.browser?.identity || null;
+}
+
+async function seamlessExtensionSignIn(account, onStatus, signal) {
+  const identity = extensionIdentity();
+  if (!identity?.getRedirectURL || !identity?.launchWebAuthFlow) {
+    throw Object.assign(new Error("Seamless browser sign-in is unavailable."), { code: "extension_auth_unavailable" });
+  }
+  const redirectUri = identity.getRedirectURL();
+  const state = randomBase64url(32);
+  const pkce = await createExtensionPkce();
+  const pending = await api(account, "/v1/auth/extension-authorizations", {
+    method: "POST",
+    body: JSON.stringify({ redirectUri, state, codeChallenge: pkce.challenge }),
+    interactivePermission: true,
+    signal,
+  });
+  onStatus("Finish signing in with Wiplash.ai in the secure browser window…");
+  const completedUrl = await identity.launchWebAuthFlow({ url: pending.authorizationUrl, interactive: true });
+  if (!completedUrl) throw new Error("Wiplash sign-in was cancelled.");
+  const completed = new URL(completedUrl);
+  const expected = new URL(redirectUri);
+  if (completed.origin !== expected.origin || completed.pathname !== expected.pathname || completed.hash || !sameText(completed.searchParams.get("state"), state)) {
+    throw new Error("Wiplash sign-in returned an invalid browser callback.");
+  }
+  const code = completed.searchParams.get("code") || "";
+  if (!/^[A-Za-z0-9_-]{43}$/.test(code)) throw new Error("Wiplash sign-in did not return a valid code.");
+  const result = await api(account, `/v1/auth/extension-authorizations/${encodeURIComponent(pending.authorizationId)}/exchange`, {
+    method: "POST",
+    body: JSON.stringify({ code, codeVerifier: pkce.verifier, redirectUri }),
+    allowAppCredential: true,
+    signal,
+  });
+  return saveAccount(withSnapshot({
+    ...account,
+    credential: result.credential.accessToken,
+    credentialExpiresAt: result.credential.expiresAt,
+  }, result.snapshot));
+}
+
+function sameText(left, right) {
+  return typeof left === "string" && typeof right === "string" && left.length > 0 && left === right;
+}
+
 async function openExternal(url) {
   if (isExtensionApp() && globalThis.chrome?.tabs?.create) {
     await chrome.tabs.create({ url });
@@ -241,6 +304,13 @@ export async function signIn(account, onStatus = () => {}, signal) {
     onStatus("Opening Wiplash.ai…");
     await openExternal(payload.authorizationUrl);
     return account;
+  }
+
+  try {
+    return await seamlessExtensionSignIn(account, onStatus, signal);
+  } catch (error) {
+    const legacyFallback = error?.status === 404 || error?.code === "extension_auth_unavailable";
+    if (!legacyFallback) throw error;
   }
 
   const pending = await api(account, "/v1/auth/device-authorizations", {
@@ -309,39 +379,66 @@ export async function pullWorkspace(account) {
 }
 
 async function openDriveAuthorization(url, preparedWindow) {
-  if (isExtensionApp() && globalThis.chrome?.tabs?.create) {
-    await chrome.tabs.create({ url });
-    return;
+  const windowsApi = globalThis.browser?.windows || globalThis.chrome?.windows;
+  const tabsApi = globalThis.browser?.tabs || globalThis.chrome?.tabs;
+  if (isExtensionApp() && windowsApi?.create) {
+    const popup = await windowsApi.create({ url, type: "popup", focused: true, width: 940, height: 760 });
+    if (!Number.isInteger(popup?.id)) throw new Error("Labeloo could not open the Google Sheet chooser.");
+    return {
+      async close() { await windowsApi.remove(popup.id).catch(() => undefined); },
+      async closed() { return windowsApi.get(popup.id).then(() => false).catch(() => true); },
+    };
+  }
+  if (isExtensionApp() && tabsApi?.create) {
+    const tab = await tabsApi.create({ url });
+    return {
+      async close() { if (Number.isInteger(tab?.id)) await tabsApi.remove(tab.id).catch(() => undefined); },
+      async closed() { return Number.isInteger(tab?.id) ? tabsApi.get(tab.id).then(() => false).catch(() => true) : true; },
+    };
   }
   if (preparedWindow && !preparedWindow.closed) {
     preparedWindow.location.href = url;
-    return;
+    return {
+      async close() { if (!preparedWindow.closed) preparedWindow.close(); },
+      async closed() { return preparedWindow.closed; },
+    };
   }
   const opened = globalThis.open(url, "labeloo-google-drive");
   if (!opened) throw new Error("Allow pop-ups for Labeloo, then choose your Google Sheet again.");
+  return {
+    async close() { if (!opened.closed) opened.close(); },
+    async closed() { return opened.closed; },
+  };
 }
 
-export async function chooseGoogleDriveSheet(account, { preparedWindow = null, onStatus = () => {}, signal } = {}) {
+export async function chooseGoogleDriveSheet(account, { preparedWindow = null, chooseAccount = false, onStatus = () => {}, signal } = {}) {
   if (!account.user) throw new Error("Sign in with Wiplash.ai before choosing a private Google Sheet.");
   if (!account.capabilities.googleDrive) throw new Error("Private Google Drive import is not available yet.");
   const pending = await api(account, "/v1/google-drive/authorizations", {
     method: "POST",
-    body: "{}",
+    body: JSON.stringify({ chooseAccount }),
     signal,
   });
-  onStatus("Choose one Google Sheet in the Google tab…");
-  await openDriveAuthorization(pending.authorizationUrl, preparedWindow);
-  const expiresAt = Date.parse(pending.expiresAt);
-  while (Date.now() < expiresAt) {
-    await delay(Math.max(1000, Number(pending.pollIntervalMs || 2000)), signal);
-    const status = await api(account, `/v1/google-drive/authorizations/${encodeURIComponent(pending.authorizationId)}`, { signal });
-    if (status.status !== "ready") continue;
-    onStatus("Loading your selected Google Sheet…");
-    return api(account, `/v1/google-drive/authorizations/${encodeURIComponent(pending.authorizationId)}/workbook`, {
-      responseType: "arrayBuffer",
-      sourceName: status.sourceName,
-      signal,
-    });
+  onStatus("Choose one Google Sheet in the compact Google window…");
+  let authorizationWindow;
+  try {
+    authorizationWindow = await openDriveAuthorization(pending.authorizationUrl, preparedWindow);
+    const expiresAt = Date.parse(pending.expiresAt);
+    while (Date.now() < expiresAt) {
+      await delay(Math.max(1000, Number(pending.pollIntervalMs || 2000)), signal);
+      const status = await api(account, `/v1/google-drive/authorizations/${encodeURIComponent(pending.authorizationId)}`, { signal });
+      if (status.status === "ready") {
+        onStatus("Loading your selected Google Sheet…");
+        return api(account, `/v1/google-drive/authorizations/${encodeURIComponent(pending.authorizationId)}/workbook`, {
+          responseType: "arrayBuffer",
+          sourceName: status.sourceName,
+          signal,
+        });
+      }
+      if (await authorizationWindow.closed()) throw new DOMException("Google Drive selection was cancelled.", "AbortError");
+    }
+  } finally {
+    await authorizationWindow?.close();
   }
   throw new Error("That Google Drive selection expired. Try again.");
 }

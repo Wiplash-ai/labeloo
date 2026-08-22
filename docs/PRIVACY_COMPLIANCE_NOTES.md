@@ -8,7 +8,7 @@ not legal advice.
 | Data path | Data | Trigger | Storage or retention |
 | --- | --- | --- | --- |
 | Local workspace | Names, addresses, email labels, custom text, layout settings | User edits or imports | Browser storage until user removes it |
-| Wiplash SSO | Account ID, name, email, session expiry | User selects Wiplash sign-in | Essential web cookie or opaque extension session; current app session is eight hours |
+| Wiplash SSO | Account ID, name, email, session expiry | User selects Wiplash sign-in | Essential eight-hour web cookie or encrypted, revocable 30-day opaque extension session |
 | Project sync | Project and label content, settings, revision metadata | User selects Enable project sync | Account-isolated encrypted project store until deletion and backup expiry |
 | Shared Google Sheet | User-supplied shared URL and workbook | User grants optional docs.google.com access | Parsed locally; not sent to Wiplash by the import itself |
 | Private Google Sheet | Selected file ID and name, OAuth code/token, XLSX bytes | Signed-in user chooses one file | Token is request-scoped; workbook receipt is memory-only, one-download, and at most ten minutes |

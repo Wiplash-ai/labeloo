@@ -10,7 +10,8 @@ test("manifest uses MV3 and requests sync hosts only when the user opts in", asy
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.version, packageMetadata.version);
   assert.equal(manifest.version, "0.5.0");
-  assert.deepEqual(manifest.permissions.sort(), ["contextMenus", "storage"]);
+  assert.deepEqual(manifest.permissions.sort(), ["contextMenus", "identity", "storage"]);
+  assert.equal(manifest.permissions.includes("identity.email"), false);
   assert.equal(manifest.host_permissions, undefined);
   assert.deepEqual(manifest.optional_host_permissions, ["https://auth.wiplash.ai/*", "https://docs.google.com/*"]);
   assert.equal(manifest.action.default_popup, undefined);
@@ -120,8 +121,12 @@ test("imports reveal Google Sheets on demand and duplicate references navigate b
   assert.match(html, /Google sign-in does not give Labeloo access/);
   assert.match(html, /Share → General access → Anyone with the link \(Viewer\)/);
   assert.match(html, /id="googleDriveButton"/);
+  assert.match(html, /id="googleDriveSwitchButton"[^>]+>Switch Google account</);
   assert.match(html, /Sign in to use My Drive/);
   assert.match(source, /chooseGoogleDriveSheet/);
+  assert.match(source, /launchWebAuthFlow/);
+  assert.match(source, /chrome\.windows\.create|windowsApi\.create/);
+  assert.match(source, /chooseAccount: true/);
   assert.match(source, /Sign in with Wiplash\.ai before choosing a private Google Sheet/);
   assert.match(html, /id="importMessage"[^>]+role="status"[^>]+aria-live="polite"/);
   assert.match(html, /id="duplicateSummary"/);

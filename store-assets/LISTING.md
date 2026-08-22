@@ -32,6 +32,7 @@ Tools
 
 - `storage` keeps sheets, labels, preferences, and optional sync state in extension storage.
 - `contextMenus` adds the user-triggered “Add selection to Labeloo” command for highlighted text.
+- `identity` opens Wiplash.ai in the browser-owned sign-in window and returns a one-time PKCE code. Labeloo does not request the browser profile's email address.
 - Optional `https://auth.wiplash.ai/*` access is requested only when the user starts Wiplash.ai sign-in, private Drive selection, or first-party project sync.
 - Optional `https://docs.google.com/*` access is requested only when the user chooses to import a public or anyone-with-link Google Sheet.
 
