@@ -248,10 +248,16 @@ svg {
 @media print {
   @page { size: letter; margin: 0; }
   html, body { width: auto; height: auto; overflow: visible; background: white; }
-  .app-shell, dialog, .toast { display: none !important; }
+  body > :not(.print-portal) { display: none !important; }
   .print-portal { display: block !important; }
-  .print-sheet { position: relative; width: 8.5in; height: 11in; overflow: hidden; break-inside: avoid; break-after: page; page-break-inside: avoid; page-break-after: always; }
-  .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+  .print-sheet {
+    position: relative;
+    width: var(--print-flow-width, calc(var(--print-page-width, 8.5in) - 1px));
+    height: var(--print-flow-height, calc(var(--print-page-height, 11in) - 1px));
+    overflow: visible;
+    break-after: page;
+  }
+  .print-sheet:last-child { break-after: auto; }
   .print-label { position: absolute; overflow: hidden; color: #000; }
   .print-label .sheet-label-content { width: 100%; height: 100%; font-family: "Trebuchet MS", "Avenir Next", sans-serif; }
 }

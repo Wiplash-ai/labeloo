@@ -471,23 +471,32 @@ function printLabels() {
   for (const sheet of printablePages) {
     const page = document.createElement("section");
     page.className = "print-sheet";
-    page.style.width = `${selectedTemplate.pageWidthIn}in`;
-    page.style.height = `${selectedTemplate.pageHeightIn}in`;
+    page.style.setProperty("--print-page-width", `${selectedTemplate.pageWidthIn}in`);
+    page.style.setProperty("--print-page-height", `${selectedTemplate.pageHeightIn}in`);
+    let printFlowWidthIn = 0;
+    let printFlowHeightIn = 0;
     for (let slot = 0; slot < selectedTemplate.labelsPerSheet; slot += 1) {
       const globalSlot = sheet * selectedTemplate.labelsPerSheet + slot;
       const index = globalSlot - (sheetSet.startSlot - 1);
       const label = index >= 0 ? sheetSet.labels[index] : null;
+      if (!label || !labelHasContent(label)) continue;
       const cell = document.createElement("div");
       cell.className = "print-label";
       const row = Math.floor(slot / selectedTemplate.columns);
       const column = slot % selectedTemplate.columns;
-      cell.style.left = `${selectedTemplate.leftMarginIn + (column * selectedTemplate.horizontalPitchIn)}in`;
-      cell.style.top = `${selectedTemplate.topMarginIn + (row * selectedTemplate.verticalPitchIn)}in`;
+      const leftIn = selectedTemplate.leftMarginIn + (column * selectedTemplate.horizontalPitchIn);
+      const topIn = selectedTemplate.topMarginIn + (row * selectedTemplate.verticalPitchIn);
+      cell.style.left = `${leftIn}in`;
+      cell.style.top = `${topIn}in`;
       cell.style.width = `${selectedTemplate.labelWidthIn}in`;
       cell.style.height = `${selectedTemplate.labelHeightIn}in`;
-      if (label && labelHasContent(label)) cell.append(createLabelContent(label));
+      cell.append(createLabelContent(label));
       page.append(cell);
+      printFlowWidthIn = Math.max(printFlowWidthIn, leftIn + selectedTemplate.labelWidthIn);
+      printFlowHeightIn = Math.max(printFlowHeightIn, topIn + selectedTemplate.labelHeightIn);
     }
+    page.style.setProperty("--print-flow-width", `${Math.min(printFlowWidthIn, selectedTemplate.pageWidthIn - (1 / 96))}in`);
+    page.style.setProperty("--print-flow-height", `${Math.min(printFlowHeightIn, selectedTemplate.pageHeightIn - (1 / 96))}in`);
     elements.printPortal.append(page);
   }
   elements.printPortal.setAttribute("aria-hidden", "false");

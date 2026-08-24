@@ -12,6 +12,10 @@ document.getElementById("printProjectName").textContent = sheet.name || "Labeloo
 for (const sheetIndex of printablePages) {
   const page = document.createElement("section");
   page.className = "print-sheet";
+  page.style.setProperty("--print-page-width", `${template.pageWidthIn}in`);
+  page.style.setProperty("--print-page-height", `${template.pageHeightIn}in`);
+  let printFlowWidthIn = 0;
+  let printFlowHeightIn = 0;
   sheet.labels.forEach((label, index) => {
     if (!labelHasContent(label)) return;
     const position = labelPosition(index, sheet.startSlot, sheet.templateId);
@@ -20,8 +24,10 @@ for (const sheetIndex of printablePages) {
     const column = position.slot % template.columns;
     const cell = document.createElement("div");
     cell.className = "print-label";
-    cell.style.left = `${template.leftMarginIn + (column * template.horizontalPitchIn)}in`;
-    cell.style.top = `${template.topMarginIn + (row * template.verticalPitchIn)}in`;
+    const leftIn = template.leftMarginIn + (column * template.horizontalPitchIn);
+    const topIn = template.topMarginIn + (row * template.verticalPitchIn);
+    cell.style.left = `${leftIn}in`;
+    cell.style.top = `${topIn}in`;
     cell.style.width = `${template.labelWidthIn}in`;
     cell.style.height = `${template.labelHeightIn}in`;
     const content = document.createElement("span");
@@ -35,7 +41,11 @@ for (const sheetIndex of printablePages) {
     });
     cell.append(content);
     page.append(cell);
+    printFlowWidthIn = Math.max(printFlowWidthIn, leftIn + template.labelWidthIn);
+    printFlowHeightIn = Math.max(printFlowHeightIn, topIn + template.labelHeightIn);
   });
+  page.style.setProperty("--print-flow-width", `${Math.min(printFlowWidthIn, template.pageWidthIn - (1 / 96))}in`);
+  page.style.setProperty("--print-flow-height", `${Math.min(printFlowHeightIn, template.pageHeightIn - (1 / 96))}in`);
   sheets.append(page);
 }
 

@@ -9,7 +9,7 @@ test("manifest uses MV3 and requests sync hosts only when the user opts in", asy
   const packageMetadata = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.version, packageMetadata.version);
-  assert.equal(manifest.version, "0.5.2");
+  assert.equal(manifest.version, "0.5.3");
   assert.deepEqual(manifest.permissions.sort(), ["contextMenus", "identity", "storage"]);
   assert.equal(manifest.permissions.includes("identity.email"), false);
   assert.equal(manifest.host_permissions, undefined);
@@ -70,12 +70,20 @@ test("Firefox declares optional cloud-sync data collection", async () => {
 
 test("print output stays in the current document and preserves Letter geometry", async () => {
   const css = await readFile(new URL("src/app.css", root), "utf8");
+  const standaloneCss = await readFile(new URL("src/print.css", root), "utf8");
   const source = await readFile(new URL("src/app.js", root), "utf8");
   assert.match(css, /@page\s*{[^}]*size:\s*letter/i);
   assert.match(source, /selectedTemplate\.labelWidthIn/);
+  assert.match(source, /--print-page-height/);
+  assert.match(source, /--print-flow-height/);
   assert.match(source, /printablePageIndexes\(sheetSet\)/);
-  assert.match(source, /label && labelHasContent\(label\)/);
+  assert.match(source, /if \(!label \|\| !labelHasContent\(label\)\) continue/);
   assert.match(source, /cell\.append\(createLabelContent\(label\)\)/);
+  assert.match(css, /height:\s*var\(--print-flow-height,\s*calc\(var\(--print-page-height,\s*11in\)\s*-\s*1px\)\)/i);
+  assert.match(standaloneCss, /height:\s*var\(--print-flow-height,\s*calc\(var\(--print-page-height,\s*11in\)\s*-\s*1px\)\)/i);
+  assert.match(css, /body\s*>\s*:not\(\.print-portal\)\s*{[^}]*display:\s*none\s*!important/i);
+  assert.doesNotMatch(css, /page-break-(?:inside|after)|break-inside/i);
+  assert.doesNotMatch(standaloneCss, /page-break-(?:inside|after)|break-inside/i);
   assert.match(css, /\.print-label \.sheet-label-content\s*{[^}]*width:\s*100%[^}]*height:\s*100%/i);
   assert.match(source, /window\.print\(\)/);
   assert.doesNotMatch(source, /window\.open\("", "_blank"\)/);
