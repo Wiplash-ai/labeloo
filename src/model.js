@@ -3,6 +3,8 @@ export const MIN_FONT_SIZE = 4;
 export const MAX_FONT_SIZE = 240;
 export const MIN_LINE_HEIGHT = 0.8;
 export const MAX_LINE_HEIGHT = 3;
+export const MIN_ZOOM = 65;
+export const MAX_ZOOM = 300;
 
 const template = (config) => Object.freeze({
   pageWidthIn: 8.5,
@@ -174,8 +176,9 @@ export function sanitizeWorkspace(raw) {
   return {
     version: 2,
     clientId: typeof raw.clientId === "string" && raw.clientId.length >= 8 ? raw.clientId.slice(0, 80) : uid("workspace"),
+    // Retained in the saved payload for backward compatibility. The UI names individual sheets.
     projectName: text(raw.projectName || "My label collection", 80),
-    zoom: Number.isFinite(zoom) ? Math.min(115, Math.max(65, zoom)) : 86,
+    zoom: Number.isFinite(zoom) ? Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) : 86,
     activeSheetId,
     selectedId,
     sheets
@@ -279,6 +282,14 @@ export function validateLabel(label) {
 export function sheetCount(sheet) {
   const selectedTemplate = getTemplate(sheet.templateId);
   return Math.max(1, Math.ceil(((sheet.startSlot - 1) + sheet.labels.length) / selectedTemplate.labelsPerSheet));
+}
+
+export function printablePageIndexes(sheet) {
+  const pages = new Set();
+  sheet.labels.forEach((label, index) => {
+    if (labelHasContent(label)) pages.add(labelPosition(index, sheet.startSlot, sheet.templateId).sheet);
+  });
+  return [...pages].sort((left, right) => left - right);
 }
 
 export function labelPosition(index, startSlot, templateId = TEMPLATE.id) {

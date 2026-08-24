@@ -23,11 +23,7 @@
           </span>
         </a>
 
-        <div class="project-control">
-          <label class="project-name-field" for="projectName">
-            <span>Project</span>
-            <input id="projectName" type="text" maxlength="80" value="My label sheet">
-          </label>
+        <div class="save-control" aria-live="polite">
           <span id="saveState" class="save-state">Saved locally</span>
         </div>
 
@@ -107,15 +103,15 @@
               </label>
               <label class="zoom-field">
                 <span>Zoom <output id="zoomValue" for="zoomInput">86%</output></span>
-                <input id="zoomInput" type="range" min="65" max="115" step="1" value="86">
+                <input id="zoomInput" type="range" min="65" max="300" step="1" value="86">
               </label>
             </div>
           </div>
 
-          <div id="sheetStage" class="sheet-stage" title="Scroll to zoom" aria-description="Scroll the mouse wheel here to zoom the label sheet">
+          <div id="sheetStage" class="sheet-stage" title="Scroll to move. Pinch or hold Command/Control while scrolling to zoom toward the pointer." aria-description="Scroll to move around the sheet. Pinch or hold Command or Control while scrolling to zoom toward the pointer.">
             <div id="sheetCanvas" class="sheet-canvas" aria-label="Address label sheet preview"></div>
           </div>
-          <p class="sheet-note"><i data-lucide="info"></i> Use a test sheet before printing on label stock. Browser print scaling must stay at 100%.</p>
+          <p class="sheet-note"><i data-lucide="info"></i> Scroll to move around the sheet; pinch or hold ⌘/Ctrl while scrolling to zoom toward the pointer. Use a test sheet before printing on label stock, and keep browser print scaling at 100%.</p>
         </section>
 
         <aside id="labelInspector" class="inspector" aria-label="Label editor" tabindex="-1">

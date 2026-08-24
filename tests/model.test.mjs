@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   TEMPLATE,
   TEMPLATES,
+  MAX_ZOOM,
+  MIN_ZOOM,
   activeSheet,
   blankLabel,
   blankSheet,
@@ -14,6 +16,7 @@ import {
   getTemplate,
   parseAddressBlock,
   parseAddressBlocks,
+  printablePageIndexes,
   sanitizeWorkspace,
   sheetCount,
   validateLabel
@@ -32,6 +35,14 @@ test("30-up geometry and start position map labels to physical slots", () => {
   assert.equal(sheetCount({ startSlot: 8, labels: Array.from({ length: 24 }) }), 2);
   assert.equal(TEMPLATE.leftMarginIn + (2 * TEMPLATE.horizontalPitchIn) + TEMPLATE.labelWidthIn, 8.3125);
   assert.equal(TEMPLATE.topMarginIn + (9 * TEMPLATE.verticalPitchIn) + TEMPLATE.labelHeightIn, 10.5);
+});
+
+test("print pagination skips blank records and physical pages without label content", () => {
+  const labels = Array.from({ length: 61 }, () => blankLabel());
+  labels[0] = blankLabel({ name: "First printable label" });
+  labels[60] = blankLabel({ name: "Third-page label" });
+  assert.deepEqual(printablePageIndexes(blankSheet({ startSlot: 1, labels })), [0, 2]);
+  assert.deepEqual(printablePageIndexes(blankSheet({ labels: [blankLabel(), blankLabel()] })), []);
 });
 
 test("all supported stock templates fit within US Letter and paginate independently", () => {
@@ -90,6 +101,8 @@ test("workspace data is bounded and sanitized", () => {
   assert.equal(activeSheet(clean).labels[0].fontSize, 99);
   assert.equal(activeSheet(clean).labels[0].align, "left");
   assert.equal(clean.version, 2);
+  assert.equal(sanitizeWorkspace({ zoom: 999 }).zoom, MAX_ZOOM);
+  assert.equal(sanitizeWorkspace({ zoom: -999 }).zoom, MIN_ZOOM);
 });
 
 test("workspaces preserve multiple named sheets", () => {

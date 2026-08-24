@@ -22,8 +22,8 @@ print them on common rectangular US Letter label stock.
 - Add, edit, duplicate, reorder, search, and delete labels.
 - Click a physical label to edit it, drag a populated label into an empty slot,
   and confirm before replacing existing content.
-- Zoom the sheet directly with the mouse wheel while the pointer is over the
-  print preview.
+- Scroll around the sheet normally, then pinch or hold Command/Control while
+  scrolling to zoom toward the pointer from 65% to 300%.
 - Paste address blocks or import Excel, Apple Numbers, LibreOffice Calc, CSV,
   TSV, and text spreadsheets.
 - Import public or anyone-with-link Google Sheets with an optional, user-granted

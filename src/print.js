@@ -1,16 +1,19 @@
-import { activeSheet, getTemplate, labelLines, labelPosition, sheetCount } from "./model.js";
+import { activeSheet, getTemplate, labelHasContent, labelLines, labelPosition, printablePageIndexes } from "./model.js";
 import { loadWorkspace } from "./storage.js";
 
 const state = await loadWorkspace();
 const sheet = activeSheet(state);
 const template = getTemplate(sheet.templateId);
 const sheets = document.getElementById("printSheets");
-document.getElementById("printProjectName").textContent = state.projectName || "Labeloo";
+const printButton = document.getElementById("printNowButton");
+const printablePages = printablePageIndexes(sheet);
+document.getElementById("printProjectName").textContent = sheet.name || "Labeloo";
 
-for (let sheetIndex = 0; sheetIndex < sheetCount(sheet); sheetIndex += 1) {
+for (const sheetIndex of printablePages) {
   const page = document.createElement("section");
   page.className = "print-sheet";
   sheet.labels.forEach((label, index) => {
+    if (!labelHasContent(label)) return;
     const position = labelPosition(index, sheet.startSlot, sheet.templateId);
     if (position.sheet !== sheetIndex) return;
     const row = Math.floor(position.slot / template.columns);
@@ -36,4 +39,9 @@ for (let sheetIndex = 0; sheetIndex < sheetCount(sheet); sheetIndex += 1) {
   sheets.append(page);
 }
 
-document.getElementById("printNowButton").addEventListener("click", () => window.print());
+if (!printablePages.length) {
+  sheets.textContent = "Add label content before printing.";
+  printButton.disabled = true;
+}
+
+printButton.addEventListener("click", () => window.print());

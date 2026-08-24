@@ -9,7 +9,7 @@ test("manifest uses MV3 and requests sync hosts only when the user opts in", asy
   const packageMetadata = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.version, packageMetadata.version);
-  assert.equal(manifest.version, "0.5.1");
+  assert.equal(manifest.version, "0.5.2");
   assert.deepEqual(manifest.permissions.sort(), ["contextMenus", "identity", "storage"]);
   assert.equal(manifest.permissions.includes("identity.email"), false);
   assert.equal(manifest.host_permissions, undefined);
@@ -26,14 +26,25 @@ test("toolbar clicks open the editor directly and reuse a browser new tab", asyn
   assert.doesNotMatch(background, /labeloo:open-editor/);
 });
 
-test("the main sheet editor exposes mouse-wheel zoom with visible feedback", async () => {
+test("the main sheet editor preserves scrolling and exposes pointer-centered gesture zoom", async () => {
   const appHtml = await readFile(new URL("src/app.html", root), "utf8");
   const appSource = await readFile(new URL("src/app.js", root), "utf8");
-  assert.match(appHtml, /id="sheetStage"[^>]+Scroll the mouse wheel here to zoom/);
+  assert.match(appHtml, /id="sheetStage"[^>]+Scroll to move[^>]+zoom toward the pointer/);
   assert.match(appHtml, /id="zoomValue"[^>]*>86%<\/output>/);
+  assert.match(appHtml, /id="zoomInput"[^>]+max="300"/);
   assert.match(appSource, /sheetStage\.addEventListener\("wheel"/);
+  assert.match(appSource, /!event\.ctrlKey && !event\.metaKey/);
+  assert.match(appSource, /captureZoomAnchor/);
+  assert.match(appSource, /restoreZoomAnchor/);
   assert.match(appSource, /capture: true, passive: false/);
   assert.match(appSource, /requestAnimationFrame/);
+});
+
+test("sheet names are the only user-facing names and drive exported filenames", async () => {
+  const appHtml = await readFile(new URL("src/app.html", root), "utf8");
+  const appSource = await readFile(new URL("src/app.js", root), "utf8");
+  assert.doesNotMatch(appHtml, /id="projectName"/);
+  assert.match(appSource, /const safeName = currentSheet\(\)\.name\.toLowerCase\(\)/);
 });
 
 test("runtime and public copy contain explicit optional Wiplash sync", async () => {
@@ -62,6 +73,8 @@ test("print output stays in the current document and preserves Letter geometry",
   const source = await readFile(new URL("src/app.js", root), "utf8");
   assert.match(css, /@page\s*{[^}]*size:\s*letter/i);
   assert.match(source, /selectedTemplate\.labelWidthIn/);
+  assert.match(source, /printablePageIndexes\(sheetSet\)/);
+  assert.match(source, /label && labelHasContent\(label\)/);
   assert.match(source, /cell\.append\(createLabelContent\(label\)\)/);
   assert.match(css, /\.print-label \.sheet-label-content\s*{[^}]*width:\s*100%[^}]*height:\s*100%/i);
   assert.match(source, /window\.print\(\)/);

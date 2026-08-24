@@ -62,10 +62,13 @@ body {
   overflow: hidden;
   background: white;
   box-shadow: 0 18px 50px rgba(20, 30, 28, 0.18);
+  break-inside: avoid;
   break-after: page;
+  page-break-inside: avoid;
+  page-break-after: always;
 }
 
-.print-sheet:last-child { break-after: auto; }
+.print-sheet:last-child { break-after: auto; page-break-after: auto; }
 
 .print-label {
   position: absolute;

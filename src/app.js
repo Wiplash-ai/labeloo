@@ -31,8 +31,10 @@ import {
   LABEL_TYPES,
   MAX_FONT_SIZE,
   MAX_LINE_HEIGHT,
+  MAX_ZOOM,
   MIN_FONT_SIZE,
   MIN_LINE_HEIGHT,
+  MIN_ZOOM,
   TEMPLATES,
   activeSheet,
   blankLabel,
@@ -45,6 +47,7 @@ import {
   insertLabelsIntoBlankSlots,
   parseAddressBlocks,
   parseQuickLabel,
+  printablePageIndexes,
   sanitizeWorkspace,
   sheetCount,
   validateLabel
@@ -123,7 +126,6 @@ document.querySelectorAll("dialog").forEach((dialog) => {
 
 const $ = (selector) => document.querySelector(selector);
 const elements = Object.fromEntries([
-  "projectName",
   "saveState",
   "importButton",
   "exportButton",
@@ -461,8 +463,12 @@ function printLabels() {
   elements.printPortal.replaceChildren();
   const sheetSet = currentSheet();
   const selectedTemplate = getTemplate(sheetSet.templateId);
-  const count = sheetCount(sheetSet);
-  for (let sheet = 0; sheet < count; sheet += 1) {
+  const printablePages = printablePageIndexes(sheetSet);
+  if (!printablePages.length) {
+    showToast("Add label content before printing");
+    return;
+  }
+  for (const sheet of printablePages) {
     const page = document.createElement("section");
     page.className = "print-sheet";
     page.style.width = `${selectedTemplate.pageWidthIn}in`;
@@ -479,7 +485,7 @@ function printLabels() {
       cell.style.top = `${selectedTemplate.topMarginIn + (row * selectedTemplate.verticalPitchIn)}in`;
       cell.style.width = `${selectedTemplate.labelWidthIn}in`;
       cell.style.height = `${selectedTemplate.labelHeightIn}in`;
-      if (label) cell.append(createLabelContent(label));
+      if (label && labelHasContent(label)) cell.append(createLabelContent(label));
       page.append(cell);
     }
     elements.printPortal.append(page);
@@ -811,7 +817,6 @@ function renderInspector() {
 function renderMeta() {
   const sheet = currentSheet();
   const totalSheets = sheetCount(sheet);
-  elements.projectName.value = state.projectName;
   elements.labelCount.textContent = `${sheet.labels.length} label${sheet.labels.length === 1 ? "" : "s"}`;
   elements.sheetCount.textContent = `${totalSheets} page${totalSheets === 1 ? "" : "s"}`;
   elements.startSlotInput.value = sheet.startSlot;
@@ -1214,7 +1219,7 @@ async function importLabels() {
 function exportCsv() {
   const blob = new Blob([labelsToCsv(currentLabels())], { type: "text/csv;charset=utf-8" });
   const link = document.createElement("a");
-  const safeName = state.projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "labeloo";
+  const safeName = currentSheet().name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "labeloo";
   link.href = URL.createObjectURL(blob);
   link.download = `${safeName}.csv`;
   link.click();
@@ -1401,10 +1406,6 @@ elements.confirmReplaceLabelButton.addEventListener("click", () => {
   elements.replaceLabelDialog.close();
 });
 elements.replaceLabelDialog.addEventListener("close", () => { pendingLabelCopy = null; });
-elements.projectName.addEventListener("input", () => {
-  state.projectName = elements.projectName.value;
-  scheduleSave();
-});
 elements.startSlotInput.addEventListener("change", () => {
   currentSheet().startSlot = Math.min(currentTemplate().labelsPerSheet, Math.max(1, Number(elements.startSlotInput.value) || 1));
   currentSheet().activePage = 0;
@@ -1420,13 +1421,34 @@ elements.templateSelect.addEventListener("change", () => {
   scheduleSave();
   showToast(`${selectedTemplate.name} selected`);
 });
-function setZoom(nextZoom) {
-  const minimum = Number(elements.zoomInput.min) || 65;
-  const maximum = Number(elements.zoomInput.max) || 115;
+function captureZoomAnchor(clientX, clientY) {
+  const canvasRect = elements.sheetCanvas.getBoundingClientRect();
+  const scale = state.zoom / 100;
+  return {
+    clientX,
+    clientY,
+    canvasX: (clientX - canvasRect.left) / scale,
+    canvasY: (clientY - canvasRect.top) / scale
+  };
+}
+
+function restoreZoomAnchor(anchor) {
+  if (!anchor) return;
+  const canvasRect = elements.sheetCanvas.getBoundingClientRect();
+  const scale = state.zoom / 100;
+  elements.sheetStage.scrollLeft += canvasRect.left + (anchor.canvasX * scale) - anchor.clientX;
+  elements.sheetStage.scrollTop += canvasRect.top + (anchor.canvasY * scale) - anchor.clientY;
+}
+
+function setZoom(nextZoom, pointer = null) {
+  const minimum = Number(elements.zoomInput.min) || MIN_ZOOM;
+  const maximum = Number(elements.zoomInput.max) || MAX_ZOOM;
   const clampedZoom = Math.min(maximum, Math.max(minimum, Math.round(nextZoom)));
   if (clampedZoom === state.zoom) return;
+  const anchor = pointer ? captureZoomAnchor(pointer.clientX, pointer.clientY) : null;
   state.zoom = clampedZoom;
   renderSheet();
+  restoreZoomAnchor(anchor);
   scheduleSave();
 }
 
@@ -1435,16 +1457,22 @@ elements.zoomInput.addEventListener("input", () => {
 });
 
 let pendingWheelZoom = 0;
+let pendingWheelPointer = null;
 let wheelZoomFrame = null;
 elements.sheetStage.addEventListener("wheel", (event) => {
-  if (!event.deltaY) return;
+  if (!event.deltaY || (!event.ctrlKey && !event.metaKey)) return;
   event.preventDefault();
   event.stopPropagation();
   pendingWheelZoom += event.deltaY;
+  pendingWheelPointer = { clientX: event.clientX, clientY: event.clientY };
   if (wheelZoomFrame) return;
   wheelZoomFrame = requestAnimationFrame(() => {
-    if (pendingWheelZoom !== 0) setZoom(state.zoom + (pendingWheelZoom < 0 ? 4 : -4));
+    if (pendingWheelZoom !== 0) {
+      const step = Math.min(6, Math.max(1, Math.round(Math.abs(pendingWheelZoom) / 20)));
+      setZoom(state.zoom + (pendingWheelZoom < 0 ? step : -step), pendingWheelPointer);
+    }
     pendingWheelZoom = 0;
+    pendingWheelPointer = null;
     wheelZoomFrame = null;
   });
 }, { capture: true, passive: false });
