@@ -61,9 +61,16 @@ import {
   readSpreadsheetBytes,
   readSpreadsheetFile
 } from "./spreadsheet.js";
+import {
+  IMPORT_RECEIPT_SESSION_KEY,
+  importReceiptTokenFromUrl,
+  urlWithoutImportReceipt,
+  workspaceWithImportReceipt
+} from "./import-handoff.js";
 import { loadWorkspace, saveWorkspace, takePendingSelection } from "./storage.js";
 import {
   chooseGoogleDriveSheet,
+  consumeImportReceipt,
   loadAccount,
   logout,
   pullWorkspace,
@@ -218,9 +225,26 @@ let toastTimer = null;
 let cloudTimer = null;
 let account = await loadAccount();
 let accountReady = false;
+let importReceiptBusy = false;
 let sheetDialogMode = "create";
 let pendingLabelCopy = null;
 let draggedLabelId = null;
+
+function capturePendingImportReceipt() {
+  const fromUrl = importReceiptTokenFromUrl(globalThis.location?.href || "");
+  try {
+    if (fromUrl) sessionStorage.setItem(IMPORT_RECEIPT_SESSION_KEY, fromUrl);
+    if (fromUrl && globalThis.history?.replaceState) {
+      history.replaceState(history.state, "", urlWithoutImportReceipt(location.href));
+    }
+    const stored = sessionStorage.getItem(IMPORT_RECEIPT_SESSION_KEY) || "";
+    return /^loo_import_[A-Za-z0-9_-]{43}$/.test(stored) ? stored : "";
+  } catch {
+    return fromUrl;
+  }
+}
+
+let pendingImportReceiptToken = capturePendingImportReceipt();
 
 const currentSheet = () => activeSheet(state);
 const currentLabels = () => currentSheet().labels;
@@ -370,6 +394,39 @@ function renderAccount() {
 function setAccountMessage(message, isError = false) {
   elements.accountMessage.textContent = message;
   elements.accountMessage.classList.toggle("error", isError);
+}
+
+function clearPendingImportReceipt() {
+  pendingImportReceiptToken = "";
+  try { sessionStorage.removeItem(IMPORT_RECEIPT_SESSION_KEY); } catch { /* Tab storage can be unavailable in hardened browsers. */ }
+}
+
+async function finishPendingImportReceipt() {
+  if (!pendingImportReceiptToken || importReceiptBusy) return;
+  if (!account.user) {
+    showAccountDialog("Sign in with Wiplash.ai to open the labels selected in Google Sheets.");
+    return;
+  }
+  importReceiptBusy = true;
+  setAccountMessage("Opening your Google Sheets labels…");
+  try {
+    const receipt = await consumeImportReceipt(account, pendingImportReceiptToken);
+    const imported = workspaceWithImportReceipt(state, receipt);
+    state = imported.workspace;
+    clearPendingImportReceipt();
+    await saveWorkspace(state);
+    render();
+    renderAccount();
+    if (elements.accountDialog.open) elements.accountDialog.close();
+    scheduleSave();
+    showToast(`${imported.count} Google Sheets label${imported.count === 1 ? "" : "s"} opened`);
+  } catch (error) {
+    if ([400, 404].includes(error?.status)) clearPendingImportReceipt();
+    showAccountDialog(error?.message || "Labeloo could not open that spreadsheet import.");
+    setAccountMessage(error?.message || "Labeloo could not open that spreadsheet import.", true);
+  } finally {
+    importReceiptBusy = false;
+  }
 }
 
 async function syncToCloud(force = false, enable = false) {
@@ -1267,7 +1324,10 @@ elements.accountSubmit.addEventListener("click", async () => {
     account = await signIn(account, (message) => setAccountMessage(message));
     accountReady = true;
     renderAccount();
-    if (account.user) showToast("Wiplash.ai account connected");
+    if (account.user) {
+      showToast("Wiplash.ai account connected");
+      await finishPendingImportReceipt();
+    }
   } catch (error) {
     setAccountMessage(error.message, true);
   } finally {
@@ -1498,7 +1558,9 @@ refreshAccount(account).then((nextAccount) => {
   accountReady = true;
   renderAccount();
   if (account.user && account.syncEnabled) scheduleSave();
+  void finishPendingImportReceipt();
 }).catch(() => {
   accountReady = true;
   renderAccount();
+  if (pendingImportReceiptToken) showAccountDialog("Sign in with Wiplash.ai to open the labels selected in Google Sheets.");
 });

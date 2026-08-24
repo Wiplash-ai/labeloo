@@ -33,6 +33,9 @@ print them on common rectangular US Letter label stock.
 - Choose a workbook sheet, switch row/column orientation, select header and
   first-data rows, map source columns to label fields, and preview labels before
   importing.
+- Open a Google Sheets selection in the unpublished Labeloo Editor add-on,
+  adjust its range and field mapping in a native sidebar, then continue into a
+  new Labeloo sheet through an account-bound, single-use receipt.
 - Fill existing blank label records before appending imported rows.
 - Flag repeated printed text with red sheet references and direct links between
   duplicate labels in the editor.
@@ -125,6 +128,11 @@ verified approach to round, oval, square, card, and nonuniform layouts.
 Future spreadsheet-native distribution through Google Workspace, Microsoft
 Excel, Airtable, LibreOffice Calc, ONLYOFFICE, and OpenOffice is documented in
 the [Spreadsheet Add-on Marketplace Research](docs/SPREADSHEET_ADD_ON_MARKETPLACES.md).
+
+The Google Sheets add-on is implemented in the sibling
+`labeloo-google-sheets` repository as an unpublished Apps Script test build.
+Its production handoff routes remain undeployed until a separate release is
+approved.
 
 ## License
 

@@ -2,6 +2,12 @@
 
 Research snapshot: August 21, 2026.
 
+Implementation update: August 24, 2026. The first Google Sheets Editor add-on
+slice, generic connector authorization, one-time import receipt, and hosted
+Labeloo receipt consumer are implemented and tested locally. The add-on is
+installed only as a development test against a private sample spreadsheet;
+none of these changes are deployed or submitted to Marketplace.
+
 Labeloo should meet people where their address data already lives. The next
 distribution iteration can add thin, native spreadsheet connectors while
 keeping one maintained label-mapping, editing, and printing application.
@@ -10,7 +16,7 @@ keeping one maintained label-mapping, editing, and printing application.
 
 | Priority | Platform | Distribution surface | Native entry point |
 | ---: | --- | --- | --- |
-| 1 | Google Sheets and Drive | Google Workspace Marketplace | Sheets menu/sidebar and Drive **Open with Labeloo** |
+| 1 | Google Sheets | Google Workspace Marketplace | Sheets menu/sidebar for the current spreadsheet |
 | 2 | Microsoft Excel | Microsoft Marketplace | Excel ribbon command and task pane |
 | 3 | Airtable | Airtable Extensions Marketplace | Base/view/record selection extension |
 | 4 | LibreOffice Calc | LibreOffice Extension Center | Calc command for selected cells or the active sheet |
@@ -36,6 +42,12 @@ introduces a first-party extension API and distribution surface.
   HTTPS application URL.
 - The Marketplace review is separate from OAuth brand/scope verification.
 - Keep `drive.file`; do not expand to blanket `drive` or `drive.readonly` access.
+
+The implemented Editor add-on deliberately does not request a Drive scope. It
+uses `spreadsheets.currentonly`, reads displayed values from the current file,
+and never writes to spreadsheet cells. Drive **Open with Labeloo** remains a
+separate later distribution surface if its added verification and permission
+cost is justified.
 
 References:
 
@@ -150,14 +162,14 @@ instead of silently uploading their data.
 
 ## Proposed iteration slices
 
-1. Add a generic one-time import-receipt contract to the private account
-   service and a hosted Labeloo `/import` consumer.
-2. Ship a Google Sheets Editor add-on and Drive **Open with** integration using
-   the existing Google OAuth project.
+1. Deploy the completed generic connector authorization, one-time receipt, and
+   hosted Labeloo consumer after production review.
+2. Finish the Google Sheets add-on release assets, privacy disclosures, OAuth
+   verification, and Marketplace review. Evaluate Drive **Open with** as a
+   separate permission decision.
 3. Reuse the contract for an Excel task-pane add-in.
 4. Evaluate Airtable demand with a records-to-label prototype.
 5. Build the LibreOffice `.oxt` connector with both secure handoff and offline
    CSV fallback.
 6. Reassess ONLYOFFICE and OpenOffice after measuring installs and successful
    imports from the first four channels.
-

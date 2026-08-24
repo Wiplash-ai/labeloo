@@ -442,3 +442,13 @@ export async function chooseGoogleDriveSheet(account, { preparedWindow = null, c
   }
   throw new Error("That Google Drive selection expired. Try again.");
 }
+
+export async function consumeImportReceipt(account, receiptToken, signal) {
+  if (!account.user) throw new Error("Sign in with Wiplash.ai to open that spreadsheet import.");
+  const payload = await api(account, "/v1/import-receipts/consume", {
+    method: "POST",
+    body: JSON.stringify({ receiptToken }),
+    signal,
+  });
+  return payload.import;
+}
