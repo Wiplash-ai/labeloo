@@ -2,11 +2,12 @@
 
 Research snapshot: August 21, 2026.
 
-Implementation update: August 24, 2026. The first Google Sheets Editor add-on
+Implementation update: August 25, 2026. The first Google Sheets Editor add-on
 slice, generic connector authorization, one-time import receipt, and hosted
-Labeloo receipt consumer are implemented and tested locally. The add-on is
-installed only as a development test against a private sample spreadsheet;
-none of these changes are deployed or submitted to Marketplace.
+Labeloo receipt consumer are implemented. The account and receipt service is
+deployed, and the add-on is installed as a development test against a private
+sample spreadsheet. Its public repository and release-hardening materials are
+prepared, but OAuth verification and the Marketplace listing remain unsubmitted.
 
 Labeloo should meet people where their address data already lives. The next
 distribution iteration can add thin, native spreadsheet connectors while
@@ -162,14 +163,12 @@ instead of silently uploading their data.
 
 ## Proposed iteration slices
 
-1. Deploy the completed generic connector authorization, one-time receipt, and
-   hosted Labeloo consumer after production review.
-2. Finish the Google Sheets add-on release assets, privacy disclosures, OAuth
+1. Finish the Google Sheets add-on release assets, privacy disclosures, OAuth
    verification, and Marketplace review. Evaluate Drive **Open with** as a
    separate permission decision.
-3. Reuse the contract for an Excel task-pane add-in.
-4. Evaluate Airtable demand with a records-to-label prototype.
-5. Build the LibreOffice `.oxt` connector with both secure handoff and offline
+2. Reuse the contract for an Excel task-pane add-in.
+3. Evaluate Airtable demand with a records-to-label prototype.
+4. Build the LibreOffice `.oxt` connector with both secure handoff and offline
    CSV fallback.
-6. Reassess ONLYOFFICE and OpenOffice after measuring installs and successful
+5. Reassess ONLYOFFICE and OpenOffice after measuring installs and successful
    imports from the first four channels.

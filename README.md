@@ -131,8 +131,9 @@ the [Spreadsheet Add-on Marketplace Research](docs/SPREADSHEET_ADD_ON_MARKETPLAC
 
 The Google Sheets add-on is implemented in the sibling
 `labeloo-google-sheets` repository as an unpublished Apps Script test build.
-Its production handoff routes remain undeployed until a separate release is
-approved.
+Its scoped connector authorization, one-time receipt, and hosted Labeloo
+consumer are deployed. The add-on remains limited to its test deployment while
+Google OAuth verification and the Workspace Marketplace draft are completed.
 
 ## License
 

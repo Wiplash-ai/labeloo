@@ -26,7 +26,7 @@
     </header>
     <main class="policy">
       <header>
-        <span class="eyebrow">Effective August 21, 2026</span>
+        <span class="eyebrow">Effective August 25, 2026</span>
         <h1>Privacy should stick.</h1>
         <p>
           Labeloo is local-first. You can build and print label sheets without
@@ -65,6 +65,34 @@
           projects are isolated by Wiplash account and encrypted at rest.
           Signing out keeps the local copy and disables automatic sync on that
           browser.
+        </p>
+      </section>
+      <section>
+        <h2>Google Sheets Editor add-on</h2>
+        <p>
+          The optional Labeloo Google Sheets add-on runs inside the spreadsheet
+          you currently have open. It reads displayed values only from the
+          selection, surrounding table, used sheet range, or custom A1 range
+          you choose. It does not request Google Drive access, enumerate your
+          files, read formulas, comments, collaborators, or revision history,
+          or write to spreadsheet cells.
+        </p>
+        <p>
+          Header detection, row boundaries, field mapping, and preview occur in
+          the add-on sidebar. Opening, refreshing, or mapping a range does not
+          upload its values. After you click <strong>Continue in Labeloo</strong>,
+          the add-on sends only the mapped label records plus the workbook,
+          sheet, and range names over HTTPS to the first-party Labeloo account
+          service.
+        </p>
+        <p>
+          A Wiplash.ai connection is required for this handoff. The add-on
+          stores an opaque, revocable connector credential in Google Apps
+          Script user properties until it expires or you disconnect. Label
+          content is held in an encrypted, account-bound, single-use receipt
+          for no more than ten minutes and is removed after the first
+          consumption or automatic expiry. Spreadsheet values and credentials
+          are not placed in the handoff URL.
         </p>
       </section>
       <section>
@@ -120,6 +148,7 @@
           <li>We do not use label content for behavioral advertising.</li>
           <li>We do not require cloud sync to use the editor or printer.</li>
           <li>We do not use Google Drive permission to enumerate your Drive.</li>
+          <li>We do not use the Google Sheets add-on to read formulas or change cells.</li>
           <li>
             We do not intentionally collect payment-card details in Labeloo.
           </li>
