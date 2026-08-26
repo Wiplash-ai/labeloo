@@ -61,6 +61,11 @@ test("runtime and public copy contain explicit optional Wiplash sync", async () 
   assert.doesNotMatch(source, /\/auth\/(?:login|register)/);
 });
 
+test("the hosted Labeloo editor declares the canonical product favicon", async () => {
+  const html = await readFile(new URL("../src/app.html", import.meta.url), "utf8");
+  assert.match(html, /<link rel="icon" href="assets\/labeloo-mark\.svg" type="image\/svg\+xml">/);
+});
+
 test("Firefox declares optional cloud-sync data collection", async () => {
   const buildScript = await readFile(new URL("scripts/build.mjs", root), "utf8");
   assert.match(buildScript, /required:\s*\["none"\]/);

@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
@@ -28,22 +29,38 @@ async function bundle(entry, outfile) {
   });
 }
 
+async function versionedHtml(sourcePath, outputDir, assetNames) {
+  let html = await readFile(sourcePath, "utf8");
+  for (const assetName of assetNames) {
+    const asset = await readFile(join(outputDir, assetName));
+    const version = createHash("sha256").update(asset).digest("hex").slice(0, 12);
+    html = html.replaceAll(`"${assetName}"`, `"${assetName}?v=${version}"`);
+  }
+  return html;
+}
+
 async function buildSurface(outputDir, includeExtensionRuntime = false) {
   await mkdir(outputDir, { recursive: true });
   await bundle(join(src, "app.js"), join(outputDir, "app.js"));
   await bundle(join(src, "print.js"), join(outputDir, "print.js"));
-  await copyFile(join(src, "app.html"), join(outputDir, "app.html"));
   await copyFile(join(src, "app.css"), join(outputDir, "app.css"));
-  await copyFile(join(src, "print.html"), join(outputDir, "print.html"));
   await copyFile(join(src, "print.css"), join(outputDir, "print.css"));
   await cp(join(src, "assets"), join(outputDir, "assets"), { recursive: true });
+  await writeFile(
+    join(outputDir, "app.html"),
+    await versionedHtml(join(src, "app.html"), outputDir, ["app.css", "app.js"]),
+  );
+  await writeFile(
+    join(outputDir, "print.html"),
+    await versionedHtml(join(src, "print.html"), outputDir, ["print.css", "print.js"]),
+  );
   if (includeExtensionRuntime) {
     await copyFile(join(root, "background.js"), join(outputDir, "background.js"));
   }
 }
 
 await buildSurface(join(dist, "web"));
-await copyFile(join(src, "app.html"), join(dist, "web", "index.html"));
+await copyFile(join(dist, "web", "app.html"), join(dist, "web", "index.html"));
 
 const baseManifest = JSON.parse(await readFile(join(root, "manifest.json"), "utf8"));
 for (const browser of browserTargets) {

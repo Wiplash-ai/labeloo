@@ -7,7 +7,7 @@
     "build": "node scripts/build.mjs",
     "dev": "node scripts/dev-server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "verify": "npm test && npm run build",
+    "verify": "npm test && npm run build && node scripts/verify-build.mjs",
     "package:stores": "node scripts/package-stores.mjs"
   },
   "dependencies": {

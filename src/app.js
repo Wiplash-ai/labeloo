@@ -421,7 +421,9 @@ async function finishPendingImportReceipt() {
     renderAccount();
     if (elements.accountDialog.open) elements.accountDialog.close();
     scheduleSave();
-    showToast(`${imported.count} Google Sheets label${imported.count === 1 ? "" : "s"} opened`);
+    showToast(imported.destination === "current_sheet"
+      ? `${imported.count} Google Sheets label${imported.count === 1 ? "" : "s"} added to the current sheet`
+      : `${imported.count} Google Sheets label${imported.count === 1 ? "" : "s"} opened on a new sheet`);
   } catch (error) {
     if ([400, 404].includes(error?.status)) clearPendingImportReceipt();
     showAccountDialog(error?.message || "Labeloo could not open that spreadsheet import.");

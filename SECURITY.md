@@ -12,6 +12,13 @@ CSRF protection; extensions use an opaque app session delivered through a
 one-time device handoff. Project sync is account-isolated, revision-safe, and
 encrypted at rest.
 
+Spreadsheet connectors receive import-only credentials rather than full
+Labeloo sessions. A connector-created browser handoff is encrypted, single-use,
+expires after two minutes, and requires the signed, HttpOnly binding cookie set
+when that browser approved the connector. It then establishes the ordinary web
+session before redirecting to the separate account-bound import receipt. The
+reusable connector credential never enters browser JavaScript or a URL.
+
 Private Drive import uses Google's narrow `drive.file` scope and one selected
 Google Sheet. The private service exports a bounded XLSX workbook into a
 short-lived, in-memory, one-download receipt. Shared-link Google Sheet import

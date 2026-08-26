@@ -2,12 +2,13 @@
 
 Research snapshot: August 21, 2026.
 
-Implementation update: August 25, 2026. The first Google Sheets Editor add-on
-slice, generic connector authorization, one-time import receipt, and hosted
-Labeloo receipt consumer are implemented. The account and receipt service is
-deployed, and the add-on is installed as a development test against a private
-sample spreadsheet. Its public repository and release-hardening materials are
-prepared, but OAuth verification and the Marketplace listing remain unsubmitted.
+Implementation update: August 26, 2026. The Google Sheets Editor add-on,
+generic connector authorization, one-time import receipt, and hosted Labeloo
+receipt consumer are implemented and deployed. Apps Script version 5 is pinned
+to the Google Workspace Marketplace configuration, the OAuth audience and
+verified branding are in Production, and the Marketplace listing is submitted
+for review. Sensitive-scope OAuth verification still requires its unlisted demo
+video before that separate review can be submitted.
 
 Labeloo should meet people where their address data already lives. The next
 distribution iteration can add thin, native spreadsheet connectors while
@@ -71,6 +72,10 @@ References:
 - Public distribution uses Microsoft Marketplace and Partner Center. The add-in
   must work across every platform and requirement set declared in its manifest.
 
+The approved implementation sequence, identity model, manifest choice,
+cross-platform QA gates, and Marketplace package are specified in
+[Labeloo for Microsoft Excel](EXCEL_ADD_IN_PLAN.md).
+
 References:
 
 - [Publish an Office Add-in](https://learn.microsoft.com/en-us/office/dev/add-ins/publish/publish-office-add-ins-to-appsource)
@@ -133,16 +138,22 @@ opening Labeloo:
 5. Transfer the normalized workbook or row data over HTTPS only after the user
    clicks **Continue in Labeloo**.
 6. Store it in an encrypted, account-scoped, short-lived import receipt.
-7. Return an opaque, random, single-use handoff token.
-8. Open the hosted Labeloo import route and consume the receipt once.
-9. Delete the payload immediately after consumption or automatic expiry.
+7. Return an opaque, random, single-use browser handoff token that expires in
+   two minutes and is distinct from the ten-minute data receipt.
+8. Open the first-party account service, require the signed, HttpOnly binding
+   cookie created by that browser during connector approval, and establish the
+   normal Labeloo web session.
+9. Redirect to the hosted Labeloo import route and consume the receipt once.
+10. Delete the payload immediately after consumption or automatic expiry.
 
 Do not place names, addresses, spreadsheet values, provider authorization
 codes, or reusable access tokens in a URL. URLs can be retained by browser
 history, analytics, reverse proxies, screenshots, and referrer headers.
 
-The handoff token should contain no user data, expire in roughly ten minutes,
-be bound to the initiating Wiplash account and connector, and reject replay.
+The handoff token should contain no user data, expire in roughly two minutes,
+be bound to the initiating Wiplash account, connector, and approving browser,
+and reject replay. The independently random data receipt may remain valid for
+roughly ten minutes but still requires the matching account session.
 Anonymous/local-only users should receive a CSV download or clipboard handoff
 instead of silently uploading their data.
 
@@ -163,10 +174,11 @@ instead of silently uploading their data.
 
 ## Proposed iteration slices
 
-1. Finish the Google Sheets add-on release assets, privacy disclosures, OAuth
-   verification, and Marketplace review. Evaluate Drive **Open with** as a
-   separate permission decision.
-2. Reuse the contract for an Excel task-pane add-in.
+1. Complete the Google Sheets sensitive-scope demo video and OAuth review while
+   the submitted Marketplace listing is reviewed. Evaluate Drive **Open with**
+   later as a separate permission decision.
+2. Build the approved Excel ribbon/task-pane connector in
+   [Labeloo for Microsoft Excel](EXCEL_ADD_IN_PLAN.md).
 3. Evaluate Airtable demand with a records-to-label prototype.
 4. Build the LibreOffice `.oxt` connector with both secure handoff and offline
    CSV fallback.

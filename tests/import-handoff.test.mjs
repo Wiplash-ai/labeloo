@@ -5,7 +5,7 @@ import {
   urlWithoutImportReceipt,
   workspaceWithImportReceipt,
 } from "../src/import-handoff.js";
-import { sampleWorkspace } from "../src/model.js";
+import { blankLabel, sampleWorkspace } from "../src/model.js";
 
 const token = `loo_import_${"a".repeat(43)}`;
 
@@ -31,4 +31,41 @@ test("a consumed spreadsheet receipt opens its labels on a new sheet without rep
   assert.equal(imported.workspace.sheets[1].name, "Mailing list");
   assert.deepEqual(imported.workspace.sheets[1].labels.map((label) => label.name), ["Alex Rivera", "Wiplash Labs"]);
   assert.equal(imported.workspace.activeSheetId, imported.workspace.sheets[1].id);
+  assert.equal(imported.destination, "new_sheet");
+});
+
+test("a spreadsheet receipt can fill blank slots in the current Labeloo sheet before appending", () => {
+  const current = sampleWorkspace();
+  const currentSheet = current.sheets[0];
+  const existingSheetId = currentSheet.id;
+  currentSheet.labels[1] = blankLabel({ id: "existing-blank-slot" });
+  const imported = workspaceWithImportReceipt(current, {
+    destination: "current_sheet",
+    source: { workbookName: "Fundraiser checks", sheetName: "Mailing list", range: "A1:F3" },
+    labels: [
+      { type: "address", name: "First new donor", address1: "1 New Lane", city: "Austin", state: "TX", postal: "78701" },
+      { type: "address", name: "Second new donor", address1: "2 New Lane", city: "Austin", state: "TX", postal: "78702" },
+    ],
+  });
+  assert.equal(imported.destination, "current_sheet");
+  assert.equal(imported.workspace.sheets.length, 1);
+  assert.equal(imported.workspace.activeSheetId, existingSheetId);
+  assert.equal(imported.workspace.sheets[0].labels[1].id, "existing-blank-slot");
+  assert.equal(imported.workspace.sheets[0].labels[1].name, "First new donor");
+  assert.equal(imported.workspace.sheets[0].labels.at(-1).name, "Second new donor");
+  assert.equal(imported.workspace.selectedId, "existing-blank-slot");
+});
+
+test("filling the current sheet rejects imports that exceed its remaining capacity", () => {
+  const current = sampleWorkspace();
+  current.sheets[0].labels = Array.from({ length: 2000 }, (_, index) => blankLabel({
+    id: `existing-${index}`,
+    type: "custom",
+    customText: `Existing label ${index + 1}`,
+  }));
+
+  assert.throws(() => workspaceWithImportReceipt(current, {
+    destination: "current_sheet",
+    labels: [{ type: "custom", customText: "One label too many" }],
+  }), /can accept 0 more labels/i);
 });

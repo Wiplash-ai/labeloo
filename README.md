@@ -130,10 +130,10 @@ Excel, Airtable, LibreOffice Calc, ONLYOFFICE, and OpenOffice is documented in
 the [Spreadsheet Add-on Marketplace Research](docs/SPREADSHEET_ADD_ON_MARKETPLACES.md).
 
 The Google Sheets add-on is implemented in the sibling
-`labeloo-google-sheets` repository as an unpublished Apps Script test build.
-Its scoped connector authorization, one-time receipt, and hosted Labeloo
-consumer are deployed. The add-on remains limited to its test deployment while
-Google OAuth verification and the Workspace Marketplace draft are completed.
+`labeloo-google-sheets` repository as a versioned private-QA release candidate.
+Its scoped connector authorization, one-time receipt, seamless web-session
+handoff, and hosted Labeloo consumer are deployed. Marketplace publication
+remains gated on Google OAuth verification and final listing review.
 
 ## License
 
