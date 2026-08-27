@@ -31,7 +31,7 @@ The primary flow is:
 | Workbook permission | Read the current workbook only; never write cells |
 | Microsoft Graph | Not requested in version 1 |
 | File browsing | Not included; the user works from the workbook already open |
-| Authentication | Microsoft nested app authentication with a one-time Wiplash account-link fallback |
+| Authentication | Existing Wiplash.ai connector authorization with a cached import-only credential |
 | Labeloo handoff | Existing account-bound, single-use connector and receipt contract |
 | Manifest | Add-in-only XML manifest for the widest stable Excel compatibility |
 | Custom functions | Not included |
@@ -106,7 +106,7 @@ Excel workbook
 Create a new public sibling repository named `labeloo-excel` containing:
 
 - Office add-in manifest and command assets.
-- TypeScript task-pane application.
+- Vite-powered JavaScript task-pane application with typed Office definitions.
 - Excel host adapter.
 - Mapping and preview UI.
 - Tests, store copy, release assets, and reviewer guide.
@@ -159,25 +159,22 @@ version 1 and should be added only if cross-command state proves necessary.
 
 ### Authentication
 
-Use MSAL.js nested app authentication (NAA), which supports Excel add-ins and
-both Microsoft personal accounts and Microsoft Entra work/school accounts.
+Reuse the Wiplash.ai spreadsheet-connector authorization already proven in the
+Google Sheets add-on. The task pane starts a short-lived connector approval,
+opens the verification URL in the user's browser, polls with the one-time
+connector secret, and stores the resulting `connector:import` credential in the
+add-in origin's local storage until it expires or the user disconnects.
 
-Create a multitenant Entra app registration with:
+This keeps Wiplash.ai as the account authority and avoids forcing a second
+Microsoft identity onto users who already have a Wiplash account. Version 1
+does not register an Entra application, request Microsoft Graph scopes, infer
+identity from the signed-in Office account, or link accounts by email.
 
-- `brk-multihub://<production-add-in-origin>` as the trusted broker redirect.
-- A production task-pane SPA redirect for Excel on the web.
-- A dialog fallback redirect.
-- A delegated scope for the Labeloo connector API rather than Microsoft Graph.
-
-Call `acquireTokenSilent` first. Send only an access token issued for the
-Labeloo connector API to the private service; never send an ID token to the
-backend. Bind Microsoft's tenant and object identifiers to a Wiplash account.
-
-For a new Microsoft identity, create the Wiplash account only after explicit
-consent. For an existing Wiplash user whose Microsoft identity is not linked,
-show a one-time account-link dialog. Never link accounts by matching email
-alone. Subsequent imports should be silent until the grant expires or the user
-disconnects.
+The production task pane is hosted on the existing trusted
+`labs.wiplash.ai` origin so it can call the current Labeloo account service.
+Local development uses a same-origin HTTPS proxy because production CORS does
+not trust arbitrary localhost origins. Returning users normally reconnect
+silently from the stored 30-day import-only credential.
 
 ### Browser handoff
 
@@ -203,7 +200,7 @@ Reuse the current connector contract:
 ### Milestone 1 — Excel shell (1 day)
 
 - Create `labeloo-excel`.
-- Scaffold TypeScript, Vite, Office.js, tests, and the add-in-only manifest.
+- Scaffold JavaScript, Vite, Office.js, tests, and the add-in-only manifest.
 - Add the Home-ribbon task-pane command and Labeloo icons.
 - Sideload in Excel on the web against a sanitized workbook.
 
@@ -214,12 +211,13 @@ Reuse the current connector contract:
 - Connect the shared mapping core and local preview.
 - Add loading, retry, bounds, accessibility, and popup-blocked states.
 
-### Milestone 3 — identity and handoff (2 days)
+### Milestone 3 — connector and handoff (1-2 days)
 
-- Create the Entra app registration and NAA configuration.
-- Add private Microsoft connector endpoints and account linking.
+- Use the existing `microsoft-excel` connector identifier and generic Wiplash
+  connector authorization endpoints.
+- Cache only the import-scoped credential in the task-pane origin.
 - Reuse single-use receipts and both destination modes.
-- Verify silent reconnect, disconnect, expiration, and replay rejection.
+- Verify reconnect, disconnect, expiration, and replay rejection.
 
 ### Milestone 4 — cross-platform QA and Marketplace package (2-4 days)
 
@@ -231,7 +229,7 @@ Reuse the current connector contract:
   four real screenshots.
 - Submit through Partner Center and respond to certification findings.
 
-Expected implementation time: roughly 8-10 working days, assuming the Partner
+Expected implementation time: roughly 7-9 working days, assuming the Partner
 Center publisher account and Windows/macOS Excel test environments are ready.
 Microsoft states that human certification commonly takes another 3-5 working
 days after automated checks.
@@ -244,7 +242,7 @@ days after automated checks.
 - No workbook values leave Excel until the user clicks Continue.
 - No Microsoft Graph or OneDrive permission is requested.
 - A returning user normally imports without another login prompt.
-- Existing Wiplash users can link once without email-based auto-linking.
+- Existing Wiplash users connect once without email-based account matching.
 - New and fill-current Labeloo destinations both work and are visibly distinct.
 - Receipt URLs contain no spreadsheet data or reusable credentials.
 - Replay, expiration, disconnect, and popup-blocking paths are tested.
@@ -255,8 +253,11 @@ days after automated checks.
 
 - Confirm Partner Center publisher and trader verification before the listing
   work begins.
-- Test NAA availability and fallback behavior on the oldest Office version we
-  intend to declare.
+- The current Labs host emits `X-Frame-Options: SAMEORIGIN`; remove it only for
+  the Excel task-pane route and replace it with a tested, narrow CSP
+  `frame-ancestors` policy before Excel-on-the-web sideloading.
+- Verify local-storage persistence and external-browser opening on the oldest
+  Office version we intend to declare.
 - Validate that the Excel cell context-menu command is certifiable on every
   targeted host; remove it from the manifest if it creates a compatibility gap.
 - Keep the manifest version incremented for every Marketplace package update.
@@ -269,6 +270,6 @@ days after automated checks.
 - [Select or get the current Excel range](https://learn.microsoft.com/en-us/office/dev/add-ins/excel/excel-add-ins-ranges-set-get)
 - [Office Add-ins manifests](https://learn.microsoft.com/en-us/office/dev/add-ins/develop/add-in-manifests)
 - [Add-in commands](https://learn.microsoft.com/en-us/office/dev/add-ins/design/add-in-commands)
-- [Nested app authentication](https://learn.microsoft.com/en-us/office/dev/add-ins/develop/enable-nested-app-authentication-in-your-add-in)
+- [Authenticate with the Office dialog API](https://learn.microsoft.com/en-us/office/dev/add-ins/develop/auth-with-office-dialog-api)
 - [Microsoft Marketplace certification policies](https://learn.microsoft.com/en-us/legal/marketplace/certification-policies)
 - [Submit an Office add-in through Partner Center](https://learn.microsoft.com/en-us/partner-center/marketplace-offers/submit-to-appsource-via-partner-center)
